@@ -101,7 +101,7 @@ void CDemoFileDump::DumpUserMessage( const void *parseBuffer, int BufferSize )
 #define HANDLE_DOTA_UserMsg( _x )		case DOTA_UM_ ## _x: PrintUserMessage< CDOTAUserMsg_ ## _x, DOTA_UM_ ## _x >( *this, parseBufferUM, SizeUM ); break
 
 		default:
-			printf( "WARNING. DumpUserMessage(): Unknown user message %d.\n", Cmd );
+			fprintf( stderr, "WARNING. DumpUserMessage(): Unknown user message %d.\n", Cmd );
 			break;
 
 		HANDLE_UserMsg( AchievementEvent );            	// 1,
@@ -288,7 +288,7 @@ void CDemoFileDump::DumpDemoPacket( const std::string& buf )
 #define HANDLE_SvcMsg( _x )		case svc_ ## _x: PrintNetMessage< CSVCMsg_ ## _x, svc_ ## _x >( *this, &buf[ index ], Size ); break
 
 		default:
-			printf( "WARNING. DumpUserMessage(): Unknown netmessage %d.\n", Cmd );
+			fprintf( stderr, "WARNING. DumpUserMessage(): Unknown netmessage %d.\n", Cmd );
 			break;
 
 		HANDLE_NetMsg( NOP );            	// 0
