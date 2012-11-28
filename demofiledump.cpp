@@ -36,6 +36,10 @@
 #include "generated_proto/dota_commonmessages.pb.h"
 #include "generated_proto/dota_usermessages.pb.h"
 
+// The goal is to use the least modified code possible, not to engineer anything nice. So...
+#define COMBATLOG_STRINGTABLE_ONLY
+//#define OUTPUT_ORIGINAL
+
 void fatal_errorf( const char* fmt, ... )
 {
     va_list  vlist;
@@ -66,12 +70,14 @@ void CDemoFileDump::MsgPrintf( const ::google::protobuf::Message& msg, int size,
 	va_list vlist;
 	const std::string& TypeName = msg.GetTypeName();
 
+#ifdef OUTPUT_ORIGINAL
 	// Print the message type and size
 	printf( "---- %s (%d bytes) -----------------\n", TypeName.c_str(), size );
 
 	va_start( vlist, fmt);
 	vprintf( fmt, vlist );
 	va_end( vlist );
+#endif
 }
 
 template < class T, int msgType >
@@ -213,14 +219,16 @@ void PrintNetMessage< CSVCMsg_GameEvent, svc_GameEvent >( CDemoFileDump& Demo, c
 
 		if( iDescriptor == Demo.m_GameEventList.descriptors().size() )
 		{
+#ifdef OUTPUT_ORIGINAL
 			printf( "%s", msg.DebugString().c_str() );
+#endif
 		}
 		else
 		{
 			int numKeys = msg.keys().size();
 			const CSVCMsg_GameEventList::descriptor_t& Descriptor = Demo.m_GameEventList.descriptors( iDescriptor );
 
-			printf( "%s eventid:%d %s\n", Descriptor.name().c_str(), msg.eventid(),
+			printf( "{'evname': '%s', 'evid': %d, 'evname2': '%s'", Descriptor.name().c_str(), msg.eventid(),
 				msg.has_event_name() ? msg.event_name().c_str() : "" );
 
 			for( int i = 0; i < numKeys; i++ )
@@ -228,25 +236,24 @@ void PrintNetMessage< CSVCMsg_GameEvent, svc_GameEvent >( CDemoFileDump& Demo, c
 				const CSVCMsg_GameEventList::key_t& Key = Descriptor.keys( i );
 				const CSVCMsg_GameEvent::key_t& KeyValue = msg.keys( i );
 
-				printf(" %s: ", Key.name().c_str() );
+				printf(", '%s': ", Key.name().c_str() );
 
 				if( KeyValue.has_val_string() )
-					printf( "%s ", KeyValue.val_string().c_str() );
+					printf( "'%s'", KeyValue.val_string().c_str() );
 				if( KeyValue.has_val_float() )
-					printf( "%f ", KeyValue.val_float() );
+					printf( "%f", KeyValue.val_float() );
 				if( KeyValue.has_val_long() )
-					printf( "%d ", KeyValue.val_long() );
+					printf( "%d", KeyValue.val_long() );
 				if( KeyValue.has_val_short() )
-					printf( "%d ", KeyValue.val_short() );
+					printf( "%d", KeyValue.val_short() );
 				if( KeyValue.has_val_byte() )
-					printf( "%d ", KeyValue.val_byte() );
+					printf( "%d", KeyValue.val_byte() );
 				if( KeyValue.has_val_bool() )
-					printf( "%d ", KeyValue.val_bool() );
+					printf( "%d", KeyValue.val_bool() );
 				if( KeyValue.has_val_uint64() )
-					printf( "%lld ", KeyValue.val_uint64() );
-
-				printf( "\n" );
+					printf( "%lld", KeyValue.val_uint64() );
 			}
+			printf("}\n");
 		}
 	}
 }
@@ -338,12 +345,23 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 	{
 		const CDemoStringTables::table_t& Table = StringTables.tables( i );
 
+#ifdef COMBATLOG_STRINGTABLE_ONLY
+		if( Table.table_name() != "CombatLogNames" )
+			continue;
+#endif
+
+#ifdef OUTPUT_ORIGINAL
 		printf( "#%d %s flags:0x%x (%d Items) %d bytes\n",
 			i, Table.table_name().c_str(), Table.table_flags(),
 			Table.items().size() + Table.items_clientside().size(), Table.ByteSize() );
+#endif
 
 		bool bIsActiveModifiersTable = !strcmp( Table.table_name().c_str(), "ActiveModifiers" );
 		bool bIsUserInfo = !strcmp( Table.table_name().c_str(), "userinfo" );
+
+#ifndef OUTPUT_ORIGINAL
+		printf("[");
+#endif
 
 		// Only spew out the stringtables (really big) if verbose is on.
 		for( int itemid = 0; itemid < Table.items().size(); itemid++ )
@@ -357,7 +375,9 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 				if( Entry.ParseFromString( Item.data() ) )
 				{
 					std::string EntryStr = Entry.DebugString();
+#ifdef OUTPUT_ORIGINAL
 					printf( "    #%d %s", itemid, EntryStr.c_str() );
+#endif
 					continue;
 				}
 			}
@@ -365,19 +385,32 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 			{
 				const player_info_s *pPlayerInfo = ( const player_info_s * )&Item.data()[ 0 ];
 
+#ifdef OUTPUT_ORIGINAL
 				printf("    xuid:%lld name:%s userID:%d guid:%s friendsID:%d friendsName:%s fakeplayer:%d ishltv:%d filesDownloaded:%d\n",
 					pPlayerInfo->xuid, pPlayerInfo->name, pPlayerInfo->userID, pPlayerInfo->guid, pPlayerInfo->friendsID,
 					pPlayerInfo->friendsName, pPlayerInfo->fakeplayer, pPlayerInfo->ishltv, pPlayerInfo->filesDownloaded );
+#endif
 			}
 
+#ifdef OUTPUT_ORIGINAL
 			printf( "    #%d '%s' (%d bytes)\n", itemid, Item.str().c_str(), (int)Item.data().size() );
+#else
+			printf("'%s'", Item.str().c_str());
+			if(itemid < Table.items().size()-1)
+				printf(", ");
+#endif
 		}
+#ifndef OUTPUT_ORIGINAL
+		printf("]\n");
+#endif
 
 		for( int itemid = 0; itemid < Table.items_clientside().size(); itemid++ )
 		{
 			const CDemoStringTables::items_t& Item = Table.items_clientside( itemid );
 
+#ifdef OUTPUT_ORIGINAL
 			printf( "    %d. '%s' (%d bytes)\n", itemid, Item.str().c_str(), (int)Item.data().size() );
+#endif
 		}
 	}
 
@@ -388,8 +421,10 @@ void CDemoFileDump::PrintDemoHeader( EDemoCommands DemoCommand, int tick, int si
 {
 	const std::string& DemoCommandName = EDemoCommands_Name( DemoCommand );
 
+#ifdef OUTPUT_ORIGINAL
 	printf( "==== #%d: Tick:%d '%s' Size:%d UncompressedSize:%d ====\n",
 		m_nFrameNumber, tick, DemoCommandName.c_str(), size, uncompressed_size );
+#endif
 }
 
 template < class DEMCLASS >
