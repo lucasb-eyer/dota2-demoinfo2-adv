@@ -23,6 +23,7 @@
 //===========================================================================//
 
 #include <stdarg.h>
+#include <cstdio>
 #include "demofile.h"
 #include "demofiledump.h"
 
