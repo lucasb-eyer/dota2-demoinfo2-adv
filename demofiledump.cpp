@@ -361,7 +361,7 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 		bool bIsUserInfo = !strcmp( Table.table_name().c_str(), "userinfo" );
 
 #ifndef OUTPUT_ORIGINAL
-		printf("[");
+		printf("{'evname': 'stringtable', 'stringtable': [");
 #endif
 
 		// Only spew out the stringtables (really big) if verbose is on.
@@ -402,7 +402,7 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 #endif
 		}
 #ifndef OUTPUT_ORIGINAL
-		printf("]\n");
+		printf("]}\n");
 #endif
 
 		for( int itemid = 0; itemid < Table.items_clientside().size(); itemid++ )
