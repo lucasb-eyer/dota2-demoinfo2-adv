@@ -361,7 +361,7 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 		bool bIsUserInfo = !strcmp( Table.table_name().c_str(), "userinfo" );
 
 #ifndef OUTPUT_ORIGINAL
-		printf("{'evname': 'stringtable', 'stringtable': [");
+		printf("{'evname': 'stringtable', 'tablename': '%s', 'stringtable': [", Table.table_name().c_str());
 #endif
 
 		// Only spew out the stringtables (really big) if verbose is on.
