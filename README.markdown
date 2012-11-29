@@ -29,26 +29,26 @@ Note that only the combatlog gameevents are output by this script.
 Output format
 =============
 Currently, each line of the file contains a json object. This object is either
-a listof strings, in which case the object is the 'combatlog' string table, or
+a listof strings, in which case the object is the `combatlog` string table, or
 it is a dict, in which case it is a game event.
 
 demsontype
 ----------
-Each json object has a key "demsontype", which fully specifies what kind of 
+Each json object has a key "demsontype", which fully specifies what kind of
 data is contained in this particular line. This can also be used for debug purposes.
-(see 'debug_ignored_stringtable')
+(see `debug_ignored_stringtable`)
 
 String table
 ------------
 The string table only gets extended over time, meaning that what is the 3rd
 entry at the beginning of the replay will stay the 3rd entry until the end.
-This also implies the string table only grows. 
+This also implies the string table only grows.
 
-Currently only stringtables of type 'demsontype': 'stringtable_combatlog' are completely  printed.
+Currently only stringtables of type `'demsontype': 'stringtable_combatlog'` are completely  printed.
 
 Game event
 ----------
-'demsontype': 'gameevent'
+`'demsontype': 'gameevent'`
 
 Each game event has a `evname` and a `evid` key whose value describes the type
 of the game event. As of now, it seems this information is redundant. The
@@ -58,6 +58,29 @@ The remainder of the game event entries is dependent of the type of the event.
 For the `dota_combatlog` event, all "names" are keys of the (full, upcoming)
 `combatlog` string table. For other events, like `dota_chase_hero`, the `target`s
 seem to be entity ids which we can't get a hold of yet.
+
+### Combatlog game events
+This might be one of the most interesting gameevents. It describes some interaction
+between entities, like damaging, healing, stunning, ...
+
+TODO: find out what exactly the different `name`s, `health` and `value` mean in each case.
+
+#### type: 0
+burst damage being dealt, as opposed to damage over time (more details need to be determined)
+
+#### type: 1
+burst healing, as opposed to healing over time. Examples of this are lifeleech and magic stick.
+No salve, no tango.
+
+#### type: 2
+seems to be spell damage/modifiers. Unsure
+
+#### type: 3
+same as above. What's the difference?
+
+#### type: 4
+Seems to be kills, including creeps and building kills. This seems to be the case because the health
+is always 0. TODO: check this by watching the replay alongside the data.
 
 Credit
 ======
