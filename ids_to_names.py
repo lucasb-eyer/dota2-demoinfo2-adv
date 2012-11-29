@@ -8,8 +8,7 @@ to_tr = ('attackername', 'inflictorname', 'sourcename', 'targetname', 'targetsou
 replay = map(json.loads, sys.stdin)
 
 #No more assumptions on what is output last
-tr = filter(lambda ge: ge['demsontype'] == 'stringtable_combatlog',replay)[-1]['stringtable'] # The last replay combatlog stringtable.
-combatlogs = filter(lambda ge: ge['demsontype'] == 'gameevent', replay)
-combatlogs = filter(lambda ge: ge['evname'] == 'dota_combatlog', combatlogs)
+tr = filter(lambda ge: ge['demsontype'] == 'stringtable_combatlog', replay)[-1]['stringtable']  # The last replay combatlog stringtable.
+combatlogs = filter(lambda ge: ge['demsontype'] == 'gameevent' and ge['evname'] == 'dota_combatlog', replay)
 combatlogs_tr = map(lambda ge: {k: tr[v] if k in to_tr else v for k, v in ge.iteritems()}, combatlogs)
 print('\n'.join(map(str, combatlogs_tr)))
