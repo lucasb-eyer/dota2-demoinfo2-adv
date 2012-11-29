@@ -369,7 +369,7 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 		//output a stringtable event //TODO: use evnam to differentiate between types? is the key stringtable enough to identify this?
 		//TODO: use key "demsontype" to differ between different types?
 		//TODO: the tablename key is not quite necessary with the demsontype present
-		printf("{\"demsontype\": \"stringtable_combatlog\", tablename\": \"%s\", \"stringtable\": [", Table.table_name().c_str());
+		printf("{\"demsontype\": \"stringtable_combatlog\", \"tablename\": \"%s\", \"stringtable\": [", Table.table_name().c_str());
 
 		// Only spew out the stringtables (really big) if verbose is on.
 		for( int itemid = 0; itemid < Table.items().size(); itemid++ )
