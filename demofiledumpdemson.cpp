@@ -231,7 +231,7 @@ void PrintNetMessage< CSVCMsg_GameEvent, svc_GameEvent >( CDemoFileDump& Demo, c
 			int numKeys = msg.keys().size();
 			const CSVCMsg_GameEventList::descriptor_t& Descriptor = Demo.m_GameEventList.descriptors( iDescriptor );
 
-			printf( "{'demsontype': 'gameevent', 'evname': '%s', 'evid': %d, 'evname2': '%s'", Descriptor.name().c_str(), msg.eventid(),
+			printf( "{\"demsontype\": \"gameevent\", \"evname\": \"%s\", \"evid\": %d, \"evname2\": \"%s\"", Descriptor.name().c_str(), msg.eventid(),
 				msg.has_event_name() ? msg.event_name().c_str() : "" );
 
 			for( int i = 0; i < numKeys; i++ )
@@ -239,10 +239,10 @@ void PrintNetMessage< CSVCMsg_GameEvent, svc_GameEvent >( CDemoFileDump& Demo, c
 				const CSVCMsg_GameEventList::key_t& Key = Descriptor.keys( i );
 				const CSVCMsg_GameEvent::key_t& KeyValue = msg.keys( i );
 
-				printf(", '%s': ", Key.name().c_str() );
+				printf(", \"%s\": ", Key.name().c_str() );
 
 				if( KeyValue.has_val_string() )
-					printf( "'%s'", KeyValue.val_string().c_str() );
+					printf( "\"%s\"", KeyValue.val_string().c_str() );
 				if( KeyValue.has_val_float() )
 					printf( "%f", KeyValue.val_float() );
 				if( KeyValue.has_val_long() )
@@ -351,7 +351,7 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 
 		if( Table.table_name() != "CombatLogNames" ) {
 			//TODO: what other stringtables of interest are there?
-			printf("{'demsontype': 'debug_ignored_stringtable', 'name': '%s'}\n", Table.table_name().c_str());
+			printf("{\"demsontype\": \"debug_ignored_stringtable\", \"name\": \"%s\"}\n", Table.table_name().c_str());
 			continue;
 		}
 
@@ -368,7 +368,8 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 
 		//output a stringtable event //TODO: use evnam to differentiate between types? is the key stringtable enough to identify this?
 		//TODO: use key "demsontype" to differ between different types?
-		printf("{'demsontype': 'stringtable_combatlog', 'stringtable': [");
+		//TODO: the tablename key is not quite necessary with the demsontype present
+		printf("{\"demsontype\": \"stringtable_combatlog\", tablename\": \"%s\", \"stringtable\": [", Table.table_name().c_str());
 
 		// Only spew out the stringtables (really big) if verbose is on.
 		for( int itemid = 0; itemid < Table.items().size(); itemid++ )
@@ -407,7 +408,7 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 #ifdef OUTPUT_ORIGINAL
 			printf( "    #%d '%s' (%d bytes)\n", itemid, Item.str().c_str(), (int)Item.data().size() );
 */
-			printf("'%s'", Item.str().c_str());
+			printf("\"%s\"", Item.str().c_str());
 			if(itemid < Table.items().size()-1)
 				printf(", ");
 		}
