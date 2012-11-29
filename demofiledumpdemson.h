@@ -22,25 +22,41 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 //===========================================================================//
 
-#include "demofiledumpdemson.h"
-#include <cstdio>
+/*
+ *	This file is built up in parallel to the original demofiledump, but the output is fixed 
+ *	to be in .demson format, if the underlying files changes, it can be adjusted without 
+ *	changing the provided files, hopefuly with minimal effort.
+ */
 
-int main( int argc, char *argv[] )
+#ifndef DEMOFILEDUMPDEMSON_H
+#define DEMOFILEDUMPDEMSON_H
+
+#include "demofile.h"
+#include "generated_proto/netmessages.pb.h"
+
+class CDemoFileDump
 {
-	CDemoFileDump DemoFileDump;
+public:
+	CDemoFileDump() : m_nFrameNumber( 0 ) {}
+	~CDemoFileDump() {}
 
-	if( argc <= 1 )
-	{
-		printf( "demoinfo2.exe filename.dem\n" );
-		return 1;
-	}
+	bool Open( const char *filename ); 
+	void DoDump();
 
-	if( DemoFileDump.Open( argv[ 1 ] ) )
-	{
-		DemoFileDump.DoDump();
-		return 0;
-	}
+//TODO: is this really needed here? Forward declarations?
+//yes, those functions are used in non-class functions apparently
+public:
+	void DumpDemoPacket( const std::string& buf );
+	void DumpUserMessage( const void *parseBuffer, int BufferSize );
+	void PrintDemoHeader( EDemoCommands DemoCommand, int tick, int size, int uncompressed_size );
+	void MsgPrintf( const ::google::protobuf::Message& msg, int size, const char *fmt, ... );
 
-	return 1;
-}
+public:
+	CDemoFile m_demofile;
+	CSVCMsg_GameEventList m_GameEventList;
+
+	int m_nFrameNumber;
+};
+
+#endif // DEMOFILEDUMPDEMSON_H
 
