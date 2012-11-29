@@ -229,7 +229,7 @@ void PrintNetMessage< CSVCMsg_GameEvent, svc_GameEvent >( CDemoFileDump& Demo, c
 			int numKeys = msg.keys().size();
 			const CSVCMsg_GameEventList::descriptor_t& Descriptor = Demo.m_GameEventList.descriptors( iDescriptor );
 
-			printf( "{'evname': '%s', 'evid': %d, 'evname2': '%s'", Descriptor.name().c_str(), msg.eventid(),
+			printf( "{\"evname\": \"%s\", \"evid\": %d, \"evname2\": \"%s\"", Descriptor.name().c_str(), msg.eventid(),
 				msg.has_event_name() ? msg.event_name().c_str() : "" );
 
 			for( int i = 0; i < numKeys; i++ )
@@ -237,10 +237,10 @@ void PrintNetMessage< CSVCMsg_GameEvent, svc_GameEvent >( CDemoFileDump& Demo, c
 				const CSVCMsg_GameEventList::key_t& Key = Descriptor.keys( i );
 				const CSVCMsg_GameEvent::key_t& KeyValue = msg.keys( i );
 
-				printf(", '%s': ", Key.name().c_str() );
+				printf(", \"%s\": ", Key.name().c_str() );
 
 				if( KeyValue.has_val_string() )
-					printf( "'%s'", KeyValue.val_string().c_str() );
+					printf( "\"%s\"", KeyValue.val_string().c_str() );
 				if( KeyValue.has_val_float() )
 					printf( "%f", KeyValue.val_float() );
 				if( KeyValue.has_val_long() )
@@ -361,7 +361,7 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 		bool bIsUserInfo = !strcmp( Table.table_name().c_str(), "userinfo" );
 
 #ifndef OUTPUT_ORIGINAL
-		printf("{'evname': 'stringtable', 'stringtable': [");
+		printf("{\"evname\": \"stringtable\", \"tablename\": \"%s\", \"stringtable\": [", Table.table_name().c_str());
 #endif
 
 		// Only spew out the stringtables (really big) if verbose is on.
@@ -396,7 +396,7 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 #ifdef OUTPUT_ORIGINAL
 			printf( "    #%d '%s' (%d bytes)\n", itemid, Item.str().c_str(), (int)Item.data().size() );
 #else
-			printf("'%s'", Item.str().c_str());
+			printf("\"%s\"", Item.str().c_str());
 			if(itemid < Table.items().size()-1)
 				printf(", ");
 #endif

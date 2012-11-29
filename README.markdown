@@ -15,9 +15,16 @@ in a non-standard location, you can add compiler options using a hack like
 Usage
 =====
 
-    ./demoinfo replay.dem > outfile.txt
+    ./demoinfo replay.dem > replay.rawjsons
 
 You'll probably want to postprocess the output using a higher-level tool.
+A tool for converting the "names" present in the combatlog gameevents into
+actual strings (from the stringtables) is included in this repo since it is
+tightly connected:
+
+    python ids_to_names.py < replay.rawjsons > replay.jsons
+
+Note that only the combatlog gameevents are output by this script.
 
 Output format
 =============
