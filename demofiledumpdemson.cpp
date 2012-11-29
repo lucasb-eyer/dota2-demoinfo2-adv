@@ -24,6 +24,7 @@
 
 #include <stdarg.h>
 #include <cstdio>
+
 #include "demofile.h"
 #include "demofiledumpdemson.h"
 
@@ -345,15 +346,46 @@ void CDemoFileDump::DumpDemoPacket( const std::string& buf )
 // string tables, to which //TODO events refer
 static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& StringTables )
 {
-	for( int i = 0; i < StringTables.tables().size(); i++ )
-	{
+	for (int i = 0; i < StringTables.tables().size(); i++) {
 		const CDemoStringTables::table_t& Table = StringTables.tables( i );
 
-		if( Table.table_name() != "CombatLogNames" ) {
-			//TODO: what other stringtables of interest are there?
-			printf("{\"demsontype\": \"debug_ignored_stringtable\", \"name\": \"%s\"}\n", Table.table_name().c_str());
-			continue;
+		if (Table.table_name() == "CombatLogNames") {
+				printf("{\"demsontype\": \"stringtable_combatlog\", tablename\": \"%s\", \"stringtable\": [", Table.table_name().c_str());
+				for( int itemid = 0; itemid < Table.items().size(); itemid++ ) {
+					const CDemoStringTables::items_t& Item = Table.items( itemid );
+
+					//TODO: a similar size if-clause as in the userinfo case?
+					printf("\"%s\"", Item.str().c_str());
+					if(itemid < Table.items().size()-1) {
+						printf(", ");
+					}
+				}
+				printf("]}\n");
+		} else if (Table.table_name() == "userinfo") {
+				//TODO: actually not a string table, rather a user list
+				printf("{\"demsontype\": \"stringtable_userinfo\", tablename\": \"%s\", \"stringtable\": [", Table.table_name().c_str());
+				for( int itemid = 0; itemid < Table.items().size(); itemid++ ) {
+					const CDemoStringTables::items_t& Item = Table.items( itemid );
+
+					if (Item.data().size() == sizeof( player_info_s ) || true) {
+						const player_info_s *pPlayerInfo = ( const player_info_s * )&Item.data()[ 0 ];
+
+						//TODO: is that all? different keys?
+						printf("{\"xuid\":%lld, \"name\": \"%s\", \"userID\": %d, \"guid\": \"%s\", \"friendsID\":%d, \"friendsName\": \"%s\", \"fakeplayer\":%d, \"ishltv\":%d, \"filesDownloaded\":%d}",
+							pPlayerInfo->xuid, pPlayerInfo->name, pPlayerInfo->userID, pPlayerInfo->guid, pPlayerInfo->friendsID,
+							pPlayerInfo->friendsName, pPlayerInfo->fakeplayer, pPlayerInfo->ishltv, pPlayerInfo->filesDownloaded );
+
+						if(itemid < Table.items().size()-1) {
+							printf(", ");
+						}
+					}
+				}
+				printf("]}\n");
+
+		} else { // no stringtable we are currently interested in
+				printf("{\"demsontype\": \"debug_ignored_stringtable\", \"name\": \"%s\"}\n", Table.table_name().c_str());
 		}
+	}
 
 /*
 #ifdef OUTPUT_ORIGINAL
@@ -361,7 +393,6 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 			i, Table.table_name().c_str(), Table.table_flags(),
 			Table.items().size() + Table.items_clientside().size(), Table.ByteSize() );
 #endif
-*/
 
 		bool bIsActiveModifiersTable = !strcmp( Table.table_name().c_str(), "ActiveModifiers" );
 		bool bIsUserInfo = !strcmp( Table.table_name().c_str(), "userinfo" );
@@ -383,11 +414,9 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 				if( Entry.ParseFromString( Item.data() ) )
 				{
 					std::string EntryStr = Entry.DebugString();
-/*
 #ifdef OUTPUT_ORIGINAL
 					printf( "    #%d %s", itemid, EntryStr.c_str() );
 #endif
-*/
 					continue;
 				}
 			}
@@ -395,19 +424,16 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 			{
 				const player_info_s *pPlayerInfo = ( const player_info_s * )&Item.data()[ 0 ];
 
-/*
 #ifdef OUTPUT_ORIGINAL
 				printf("    xuid:%lld name:%s userID:%d guid:%s friendsID:%d friendsName:%s fakeplayer:%d ishltv:%d filesDownloaded:%d\n",
 					pPlayerInfo->xuid, pPlayerInfo->name, pPlayerInfo->userID, pPlayerInfo->guid, pPlayerInfo->friendsID,
 					pPlayerInfo->friendsName, pPlayerInfo->fakeplayer, pPlayerInfo->ishltv, pPlayerInfo->filesDownloaded );
 #endif
-*/
 			}
 
-/*
 #ifdef OUTPUT_ORIGINAL
 			printf( "    #%d '%s' (%d bytes)\n", itemid, Item.str().c_str(), (int)Item.data().size() );
-*/
+#endif
 			printf("\"%s\"", Item.str().c_str());
 			if(itemid < Table.items().size()-1)
 				printf(", ");
@@ -417,13 +443,12 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 		for( int itemid = 0; itemid < Table.items_clientside().size(); itemid++ )
 		{
 			const CDemoStringTables::items_t& Item = Table.items_clientside( itemid );
-/*
 #ifdef OUTPUT_ORIGINAL
 			printf( "    %d. '%s' (%d bytes)\n", itemid, Item.str().c_str(), (int)Item.data().size() );
 #endif
-*/
 		}
 	}
+*/
 
 	return true;
 }
@@ -487,7 +512,16 @@ void CDemoFileDump::DoDump()
 #define HANDLE_DemoMsg( _x )	case DEM_ ## _x: PrintDemoMessage< CDemo ## _x ## _t >( *this, bCompressed, tick, size, uncompressed_size ); break
 
 		HANDLE_DemoMsg( FileHeader );
-		HANDLE_DemoMsg( FileInfo );
+		HANDLE_DemoMsg( FileInfo ); //TODO: special handling of fileinfo? See 
+		/*
+		// something like:
+		printf("{\"demsontype\": \"demomessage_fileinfo\"");
+		printf(", \"playback_time\": %f",Msg.playback_time());
+		printf(", \"match_id\": %d",Msg.playback_ticks());
+		printf(", \"game_mode\": %d",Msg.game_mode());
+		printf(", \"game_winner\": %d",Msg.game_winner());
+		printf(", \"game_info\": ") //TODO
+		*/
 		HANDLE_DemoMsg( Stop );
 		HANDLE_DemoMsg( SyncTick );
 		HANDLE_DemoMsg( ConsoleCmd );
