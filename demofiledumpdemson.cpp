@@ -22,6 +22,7 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 //===========================================================================//
 
+#include <algorithm>
 #include <stdarg.h>
 #include <cstdio>
 #include "demofile.h"
@@ -342,6 +343,15 @@ void CDemoFileDump::DumpDemoPacket( const std::string& buf )
 	}
 }
 
+static const std::string interesting_tables[] = {"CombatLogNames", "userinfo"};
+
+// w00t w00t
+template <typename TN, typename TH, size_t N>
+static bool in(TN needle, TH (&haystack)[N])
+{
+	return std::find(haystack, haystack + N, needle) != haystack + N;
+}
+
 // string tables, to which //TODO events refer
 static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& StringTables )
 {
@@ -349,11 +359,11 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 	{
 		const CDemoStringTables::table_t& Table = StringTables.tables( i );
 
-		bool bIsCombatLogNames = !strcmp( Table.table_name().c_str(), "CombatLogNames" );
+		bool bIsActiveModifiersTable = !strcmp( Table.table_name().c_str(), "ActiveModifiers" );
 		bool bIsUserInfo = !strcmp( Table.table_name().c_str(), "userinfo" );
 
 		// skip over noninteresting stringtables, just mention them
-		if( !bIsUserInfo && !bIsCombatLogNames ) {
+		if( !in(Table.table_name(), interesting_tables) ) {
 			//TODO: only output if debug flag? (stringtable_ignored to find/highlight those entries better)
 			printf("{\"demsontype\": \"stringtable_ignored\", \"tablename\": \"%s\"}\n", Table.table_name().c_str());
 			continue;
@@ -365,30 +375,28 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 		{
 			const CDemoStringTables::items_t& Item = Table.items( itemid );
 
-			if( bIsCombatLogNames )
-			{
-				printf("\"%s\"", Item.str().c_str());
-			}
-			/*
-			//TODO: are active modifiers interesting?
-			else if( bIsActiveModifiersTable )
+			if( bIsActiveModifiersTable )
 			{
 				CDOTAModifierBuffTableEntry Entry;
 
 				if( Entry.ParseFromString( Item.data() ) )
 				{
 					std::string EntryStr = Entry.DebugString();
-#ifdef OUTPUT_ORIGINAL
-					printf( "    #%d %s", itemid, EntryStr.c_str() );
-#endif
-					continue;
+					printf( "\"%s\"", EntryStr.c_str() );
 				}
 			}
-			*/
 			//TODO: this does not work - nothing is printed if the size is not ignored!
 			//if we ignore the size, the data might be (will be) massively wrong
 			//has the code changed enough, that this struct is out of date?
-			else if( bIsUserInfo && Item.data().size() == sizeof( player_info_s ) )
+			//
+			// The problem here is much worse. player_info_s contains "bool" and "int" members.
+			// The size (in bytes) of those is not fixed by the standard and actual implementations
+			// really do differ (32 vs 64 bit, linux vs windows, ...). The struct is not "packed"
+			// either, meaning compilers are free to realign (even shuffle? unsure.) members
+			// as they feel. Seeing they provided a VC++ project, we need to find out what exactly
+			// VC++ generates and modify the struct to fit that on gcc too, by using fixed-size
+			// types and possibly packing. I'm working on it.
+			else if( bIsUserInfo /*&& Item.data().size() == sizeof( player_info_s )*/ )
 			{
 				const player_info_s *pPlayerInfo = ( const player_info_s * )&Item.data()[ 0 ];
 
@@ -398,9 +406,7 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 			}
 			else
 			{
-				continue;
-				//TODO: do not fail silently?
-				printf("Somewhere something went horribly wrong. ERROR!");
+				printf("\"%s\"", Item.str().c_str());
 			}
 
 			// sep the entries with commas
