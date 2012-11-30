@@ -66,7 +66,9 @@ between entities, like damaging, healing, stunning, ...
 TODO: find out what exactly the different `name`s, `health` and `value` mean in each case.
 
 #### type: 0
-burst damage being dealt, as opposed to damage over time (more details need to be determined)
+burst damage being dealt, as opposed to damage over time (more details need to be determined).
+Includes spell damage. `value` is the effective damage dealt, i.e. after all resistances have been
+computed. `health` seems to be the target's health left after the damage has been dealt.
 
 #### type: 1
 burst healing, as opposed to healing over time. Examples of this are lifeleech and magic stick.
