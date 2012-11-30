@@ -355,11 +355,11 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 		// skip over noninteresting stringtables, just mention them
 		if( !bIsUserInfo && !bIsCombatLogNames ) {
 			//TODO: only output if debug flag? (stringtable_ignored to find/highlight those entries better)
-			printf("{\"demsontype\": \"stringtable_ignored\", \"name\": \"%s\"}\n", Table.table_name().c_str());
+			printf("{\"demsontype\": \"stringtable_ignored\", \"tablename\": \"%s\"}\n", Table.table_name().c_str());
 			continue;
 		}
 
-		printf("{\"demsontype\": \"stringtable\", tablename\": \"%s\", \"stringtable\": [", Table.table_name().c_str());
+		printf("{\"demsontype\": \"stringtable\", \"tablename\": \"%s\", \"stringtable\": [", Table.table_name().c_str());
 
 		for( int itemid = 0; itemid < Table.items().size(); itemid++ )
 		{
