@@ -24,7 +24,6 @@
 
 #include <stdarg.h>
 #include <cstdio>
-
 #include "demofile.h"
 #include "demofiledumpdemson.h"
 
@@ -346,68 +345,33 @@ void CDemoFileDump::DumpDemoPacket( const std::string& buf )
 // string tables, to which //TODO events refer
 static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& StringTables )
 {
-	for (int i = 0; i < StringTables.tables().size(); i++) {
+	for( int i = 0; i < StringTables.tables().size(); i++ )
+	{
 		const CDemoStringTables::table_t& Table = StringTables.tables( i );
 
-		if (Table.table_name() == "CombatLogNames") {
-				printf("{\"demsontype\": \"stringtable_combatlog\", tablename\": \"%s\", \"stringtable\": [", Table.table_name().c_str());
-				for( int itemid = 0; itemid < Table.items().size(); itemid++ ) {
-					const CDemoStringTables::items_t& Item = Table.items( itemid );
-
-					//TODO: a similar size if-clause as in the userinfo case?
-					printf("\"%s\"", Item.str().c_str());
-					if(itemid < Table.items().size()-1) {
-						printf(", ");
-					}
-				}
-				printf("]}\n");
-		} else if (Table.table_name() == "userinfo") {
-				//TODO: actually not a string table, rather a user list
-				printf("{\"demsontype\": \"stringtable_userinfo\", tablename\": \"%s\", \"stringtable\": [", Table.table_name().c_str());
-				for( int itemid = 0; itemid < Table.items().size(); itemid++ ) {
-					const CDemoStringTables::items_t& Item = Table.items( itemid );
-
-					if (Item.data().size() == sizeof( player_info_s ) || true) {
-						const player_info_s *pPlayerInfo = ( const player_info_s * )&Item.data()[ 0 ];
-
-						//TODO: is that all? different keys?
-						printf("{\"xuid\":%lld, \"name\": \"%s\", \"userID\": %d, \"guid\": \"%s\", \"friendsID\":%d, \"friendsName\": \"%s\", \"fakeplayer\":%d, \"ishltv\":%d, \"filesDownloaded\":%d}",
-							pPlayerInfo->xuid, pPlayerInfo->name, pPlayerInfo->userID, pPlayerInfo->guid, pPlayerInfo->friendsID,
-							pPlayerInfo->friendsName, pPlayerInfo->fakeplayer, pPlayerInfo->ishltv, pPlayerInfo->filesDownloaded );
-
-						if(itemid < Table.items().size()-1) {
-							printf(", ");
-						}
-					}
-				}
-				printf("]}\n");
-
-		} else { // no stringtable we are currently interested in
-				printf("{\"demsontype\": \"debug_ignored_stringtable\", \"name\": \"%s\"}\n", Table.table_name().c_str());
-		}
-	}
-
-/*
-#ifdef OUTPUT_ORIGINAL
-		printf( "#%d %s flags:0x%x (%d Items) %d bytes\n",
-			i, Table.table_name().c_str(), Table.table_flags(),
-			Table.items().size() + Table.items_clientside().size(), Table.ByteSize() );
-#endif
-
-		bool bIsActiveModifiersTable = !strcmp( Table.table_name().c_str(), "ActiveModifiers" );
+		bool bIsCombatLogNames = !strcmp( Table.table_name().c_str(), "CombatLogNames" );
 		bool bIsUserInfo = !strcmp( Table.table_name().c_str(), "userinfo" );
 
-		//output a stringtable event //TODO: use evnam to differentiate between types? is the key stringtable enough to identify this?
-		//TODO: use key "demsontype" to differ between different types?
-		//TODO: the tablename key is not quite necessary with the demsontype present
-		printf("{\"demsontype\": \"stringtable_combatlog\", \"tablename\": \"%s\", \"stringtable\": [", Table.table_name().c_str());
+		// skip over noninteresting stringtables, just mention them
+		if( !bIsUserInfo && !bIsCombatLogNames ) {
+			//TODO: only output if debug flag? (stringtable_ignored to find/highlight those entries better)
+			printf("{\"demsontype\": \"stringtable_ignored\", \"tablename\": \"%s\"}\n", Table.table_name().c_str());
+			continue;
+		}
 
-		// Only spew out the stringtables (really big) if verbose is on.
+		printf("{\"demsontype\": \"stringtable\", \"tablename\": \"%s\", \"stringtable\": [", Table.table_name().c_str());
+
 		for( int itemid = 0; itemid < Table.items().size(); itemid++ )
 		{
 			const CDemoStringTables::items_t& Item = Table.items( itemid );
 
-			if( bIsActiveModifiersTable )
+			if( bIsCombatLogNames )
+			{
+				printf("\"%s\"", Item.str().c_str());
+			}
+			/*
+			//TODO: are active modifiers interesting?
+			else if( bIsActiveModifiersTable )
 			{
 				CDOTAModifierBuffTableEntry Entry;
 
@@ -420,35 +384,33 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 					continue;
 				}
 			}
+			*/
+			//TODO: this does not work - nothing is printed if the size is not ignored!
+			//if we ignore the size, the data might be (will be) massively wrong
+			//has the code changed enough, that this struct is out of date?
 			else if( bIsUserInfo && Item.data().size() == sizeof( player_info_s ) )
 			{
 				const player_info_s *pPlayerInfo = ( const player_info_s * )&Item.data()[ 0 ];
 
-#ifdef OUTPUT_ORIGINAL
-				printf("    xuid:%lld name:%s userID:%d guid:%s friendsID:%d friendsName:%s fakeplayer:%d ishltv:%d filesDownloaded:%d\n",
+				printf("{\"xuid\":%lld, \"name\": \"%s\", \"userID\": %d, \"guid\": \"%s\", \"friendsID\":%d, \"friendsName\": \"%s\", \"fakeplayer\":%d, \"ishltv\":%d, \"filesDownloaded\":%d}",
 					pPlayerInfo->xuid, pPlayerInfo->name, pPlayerInfo->userID, pPlayerInfo->guid, pPlayerInfo->friendsID,
 					pPlayerInfo->friendsName, pPlayerInfo->fakeplayer, pPlayerInfo->ishltv, pPlayerInfo->filesDownloaded );
-#endif
+			}
+			else
+			{
+				continue;
+				//TODO: do not fail silently?
+				printf("Somewhere something went horribly wrong. ERROR!");
 			}
 
-#ifdef OUTPUT_ORIGINAL
-			printf( "    #%d '%s' (%d bytes)\n", itemid, Item.str().c_str(), (int)Item.data().size() );
-#endif
-			printf("\"%s\"", Item.str().c_str());
+			// sep the entries with commas
 			if(itemid < Table.items().size()-1)
+			{
 				printf(", ");
+			}
 		}
 		printf("]}\n");
-
-		for( int itemid = 0; itemid < Table.items_clientside().size(); itemid++ )
-		{
-			const CDemoStringTables::items_t& Item = Table.items_clientside( itemid );
-#ifdef OUTPUT_ORIGINAL
-			printf( "    %d. '%s' (%d bytes)\n", itemid, Item.str().c_str(), (int)Item.data().size() );
-#endif
-		}
 	}
-*/
 
 	return true;
 }
