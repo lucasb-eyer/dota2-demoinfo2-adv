@@ -253,7 +253,7 @@ void PrintNetMessage< CSVCMsg_GameEvent, svc_GameEvent >( CDemoFileDump& Demo, c
 				if( KeyValue.has_val_byte() )
 					printf( "%d", KeyValue.val_byte() );
 				if( KeyValue.has_val_bool() )
-					printf( "%d", KeyValue.val_bool() );
+					printf( "%s", KeyValue.val_bool() ? "true" : "false" );
 				if( KeyValue.has_val_uint64() )
 					printf( "%lld", KeyValue.val_uint64() );
 			}
@@ -400,9 +400,9 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 			{
 				const player_info_s *pPlayerInfo = ( const player_info_s * )&Item.data()[ 0 ];
 
-				printf("{\"xuid\":%lld, \"name\": \"%s\", \"userID\": %d, \"guid\": \"%s\", \"friendsID\":%d, \"friendsName\": \"%s\", \"fakeplayer\":%d, \"ishltv\":%d, \"filesDownloaded\":%d}",
+				printf("{\"xuid\":%lld, \"name\": \"%s\", \"userID\": %d, \"guid\": \"%s\", \"friendsID\":%d, \"friendsName\": \"%s\", \"fakeplayer\": %s, \"ishltv\": %s, \"filesDownloaded\":%d}",
 					pPlayerInfo->xuid, pPlayerInfo->name, pPlayerInfo->userID, pPlayerInfo->guid, pPlayerInfo->friendsID,
-					pPlayerInfo->friendsName, pPlayerInfo->fakeplayer, pPlayerInfo->ishltv, pPlayerInfo->filesDownloaded );
+					pPlayerInfo->friendsName, pPlayerInfo->fakeplayer ? "true" : "false", pPlayerInfo->ishltv ? "true" : "false", pPlayerInfo->filesDownloaded );
 			}
 			else
 			{
