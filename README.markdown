@@ -34,21 +34,23 @@ it is a dict, in which case it is a game event.
 
 demsontype
 ----------
-Each json object has a key "demsontype", which fully specifies what kind of
+Each json object has a key `demsontype`, which fully specifies what kind of
 data is contained in this particular line. This can also be used for debug purposes.
 (see `debug_ignored_stringtable`)
 
 String table
 ------------
+`"demsontype": "stringtable"` or `"demsontype": "stringtable_ignored"`
+
 The string table only gets extended over time, meaning that what is the 3rd
 entry at the beginning of the replay will stay the 3rd entry until the end.
 This also implies the string table only grows.
 
-Currently only stringtables of type `'demsontype': 'stringtable_combatlog'` are completely  printed.
+Currently only stringtables of type `"demsontype": "stringtable_combatlog"` are completely printed.
 
 Game event
 ----------
-`'demsontype': 'gameevent'`
+`"demsontype": "gameevent"`
 
 Each game event has a `evname` and a `evid` key whose value describes the type
 of the game event. As of now, it seems this information is redundant. The
