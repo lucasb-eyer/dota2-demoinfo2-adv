@@ -395,8 +395,18 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 			// either, meaning compilers are free to realign (even shuffle? unsure.) members
 			// as they feel. Seeing they provided a VC++ project, we need to find out what exactly
 			// VC++ generates and modify the struct to fit that on gcc too, by using fixed-size
-			// types and possibly packing. I'm working on it.
-			else if( bIsUserInfo /*&& Item.data().size() == sizeof( player_info_s )*/ )
+			// types and possibly packing.
+			//
+			// While the above is right, this is "undone" by struct padding which aligns the
+			// elements to start at memory adresses which are multiple of 4, effectively padding
+			// the 1-byte bools with 3 bytes. Thus in the end, two differences work together to
+			// give the same end result... 1+1=0
+			//
+			// So the problem is the data is 140 bytes big while the struct has size 144 - both on win/lin.
+			//
+			// Wait... do we even need this data? Probably only player name and id, which are early
+			// in the struct and thus likely to be correct.
+			else if( bIsUserInfo && Item.data().size() > 0 )
 			{
 				const player_info_s *pPlayerInfo = ( const player_info_s * )&Item.data()[ 0 ];
 
