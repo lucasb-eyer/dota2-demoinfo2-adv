@@ -469,6 +469,31 @@ void PrintDemoMessage<CDemoStringTables_t>( CDemoFileDump& Demo, bool bCompresse
 	}
 }
 
+template <>
+void PrintDemoMessage<CDemoFileInfo_t>( CDemoFileDump& Demo, bool bCompressed, int tick, int& size, int& uncompressed_size )
+{
+	CDemoFileInfo_t Msg;
+
+	if( Demo.m_demofile.ReadMessage( &Msg, bCompressed, &size, &uncompressed_size ) )
+	{
+		Demo.PrintDemoHeader( Msg.GetType(), tick, size, uncompressed_size );
+		
+		printf( "{\"demsontype\": \"fileinfo\", \"playback_time\": %f, \"playback_ticks\": %d, \"playback_frames\": %d}\n",
+				Msg.playback_time(), Msg.playback_ticks(), Msg.playback_frames());
+		const CGameInfo_CDotaGameInfo& gameinfo = Msg.game_info().dota();
+		printf( "{\"demsontype\": \"gameinfo\", \"match_id\": %d, \"game_mode\": %d, \"game_winner\": %d, \"players\": [",
+				gameinfo.match_id(), gameinfo.game_mode(), gameinfo.game_winner() );
+		for( int iplayer = 0 ; iplayer < gameinfo.player_info_size() ; ++iplayer ) {
+			const CGameInfo_CDotaGameInfo_CPlayerInfo& player = gameinfo.player_info(iplayer);
+			printf( "{\"hero_name\": \"%s\", \"player_name\": \"%s\", \"is_fake_client\": %s}",
+					player.hero_name().c_str(), player.player_name().c_str(), player.is_fake_client() ? "true" : "false" );
+			if( iplayer < gameinfo.player_info_size()-1 )
+				printf( ", " );
+		}
+		printf( "]}\n" );
+	}
+}
+
 void CDemoFileDump::DoDump()
 {
 	bool bStopReading = false;
