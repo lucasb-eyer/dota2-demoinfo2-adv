@@ -38,6 +38,24 @@ Each json object has a key `demsontype`, which fully specifies what kind of
 data is contained in this particular line. This can also be used for debug purposes.
 (see `debug_ignored_stringtable`)
 
+fileinfo
+--------
+`"demsontype": "fileinfo"`
+
+Contains the game's length in seconds (`playback_time`), ticks (`playback_ticks`) and frames (`playback_frames`).
+
+gameinfo
+--------
+`"demsontype": "gameinfo"`
+
+Containsvery useful info about the game like the `match_id`.
+* `game_mode`: TODO
+* `game_winner`: TODO (wtf is 3? why not only 0/1 or so?)
+* `players`: A list of information (dicts) about the players in the game.
+    * `hero_name`
+    * `player_name`: the nickname, not steam/server id.
+    * `is_fake_client`: boolean. Didn't see any `true` yet.
+
 String table
 ------------
 `"demsontype": "stringtable"` or `"demsontype": "stringtable_ignored"`
