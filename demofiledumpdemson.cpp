@@ -254,8 +254,8 @@ void CDemoFileDump::DumpUserMessage( const void *parseBuffer, int BufferSize )
 
 		//$ HANDLE_DOTA_UserMsg( AddUnitToSelection );  // 64,
 		HANDLE_DOTA_UserMsg( AIDebugLine );             // 65,
-		HANDLE_DOTA_UserMsg( ChatEvent );               // 66,
-		HANDLE_DOTA_UserMsg( CombatHeroPositions );     // 67,
+		HANDLE_DOTA_UserMsg( ChatEvent );               // 66, TODO: document
+		HANDLE_DOTA_UserMsg( CombatHeroPositions );     // 67, TODO: y u no happen?
 		HANDLE_DOTA_UserMsg( CombatLogData );           // 68,
 		//$ HANDLE_DOTA_UserMsg( CombatLogName );       // 69,
 		HANDLE_DOTA_UserMsg( CombatLogShowDeath );      // 70,
@@ -265,23 +265,24 @@ void CDemoFileDump::DumpUserMessage( const void *parseBuffer, int BufferSize )
 		HANDLE_DOTA_UserMsg( GlobalLightColor );        // 74,
 		HANDLE_DOTA_UserMsg( GlobalLightDirection );    // 75,
 		HANDLE_DOTA_UserMsg( InvalidCommand );          // 76,
-		HANDLE_DOTA_UserMsg( LocationPing );            // 77,
+		HANDLE_DOTA_UserMsg( LocationPing );            // 77, TODO: Got x,y,tgt. See dota_commonmessages.proto
 		HANDLE_DOTA_UserMsg( MapLine );                 // 78,
-		HANDLE_DOTA_UserMsg( MiniKillCamInfo );         // 79,
+		HANDLE_DOTA_UserMsg( MiniKillCamInfo );         // 79, TODO: maybe interesting?
 		HANDLE_DOTA_UserMsg( MinimapDebugPoint );       // 80,
-		HANDLE_DOTA_UserMsg( MinimapEvent );            // 81,
+		HANDLE_DOTA_UserMsg( MinimapEvent );            // 81, TODO: Maybe? Has x,y!
 		HANDLE_DOTA_UserMsg( NevermoreRequiem );        // 82,
-		HANDLE_DOTA_UserMsg( OverheadEvent );           // 83,
+		HANDLE_DOTA_UserMsg( OverheadEvent );           // 83, TODO: maybe interesting? miss, poison, xp, ...
 		HANDLE_DOTA_UserMsg( SetNextAutobuyItem );      // 84,
 		HANDLE_DOTA_UserMsg( SharedCooldown );          // 85,
-		HANDLE_DOTA_UserMsg( SpectatorPlayerClick );    // 86,
+		HANDLE_DOTA_UserMsg( SpectatorPlayerClick );    // 86, TODO: y u no interesting?
 		HANDLE_DOTA_UserMsg( TutorialTipInfo );         // 87,
-		HANDLE_DOTA_UserMsg( UnitEvent );               // 88,
+		HANDLE_DOTA_UserMsg( UnitEvent );               // 88, TODO: Maybe use GESTURE or SPEECH?
 		HANDLE_DOTA_UserMsg( ParticleManager );         // 89,
 		HANDLE_DOTA_UserMsg( BotChat );                 // 90,
 		HANDLE_DOTA_UserMsg( HudError );                // 91,
-		HANDLE_DOTA_UserMsg( ItemPurchased );           // 92,
+		HANDLE_DOTA_UserMsg( ItemPurchased );           // 92, TODO: Maybe not DOTA but real $$
 		HANDLE_DOTA_UserMsg( Ping );                    // 93
+		// TODO: and 94 is DOTA_UM_ItemFound but it's only the items at the end.
 
 #undef HANDLE_UserMsg
 #undef HANDLE_DOTA_UserMsg
@@ -448,12 +449,13 @@ void CDemoFileDump::DumpDemoPacket( const std::string& buf )
 		HANDLE_SvcMsg( UserMessage );       // 23
 		//$ HANDLE_SvcMsg( EntityMessage ); // 24
 		HANDLE_SvcMsg( GameEvent );         // 25
-		HANDLE_SvcMsg( PacketEntities );    // 26
+		HANDLE_SvcMsg( PacketEntities );    // 26 TODO: If only we understood entity_data...
 		HANDLE_SvcMsg( TempEntities );      // 27
 		HANDLE_SvcMsg( Prefetch );          // 28
 		HANDLE_SvcMsg( Menu );              // 29
-		HANDLE_SvcMsg( GameEventList );     // 30
+		HANDLE_SvcMsg( GameEventList );     // 30 TODO: check that out. See netmessages.proto
 		HANDLE_SvcMsg( GetCvarValue );      // 31
+		// TODO: what about CSVCMsgList_GameEvents and CSVCMsgList_UserMessages ?
 
 #undef HANDLE_SvcMsg
 #undef HANDLE_NetMsg
