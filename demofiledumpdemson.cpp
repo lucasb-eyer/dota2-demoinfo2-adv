@@ -38,8 +38,6 @@
 #include "generated_proto/dota_commonmessages.pb.h"
 #include "generated_proto/dota_usermessages.pb.h"
 
-// everywhere, where codechunks "#ifdef OUTPUT_ORIGINAL" are commented out, possible wrong formated outputs are suppressed
-
 void fatal_errorf( const char* fmt, ... )
 {
     va_list  vlist;
@@ -70,7 +68,6 @@ void CDemoFileDump::MsgPrintf( const ::google::protobuf::Message& msg, int size,
 	va_list vlist;
 	const std::string& TypeName = msg.GetTypeName();
 
-/*
 #ifdef OUTPUT_ORIGINAL
 	// Print the message type and size
 	printf( "---- %s (%d bytes) -----------------\n", TypeName.c_str(), size );
@@ -79,7 +76,103 @@ void CDemoFileDump::MsgPrintf( const ::google::protobuf::Message& msg, int size,
 	vprintf( fmt, vlist );
 	va_end( vlist );
 #endif
-*/
+}
+
+// Our demson format expects the output to be a json object per line.
+// For this to hold true, we need to "fix" all newline characters in strings.
+// When you want to make an apple pie... again ;)
+std::string replace(const std::string& s, const std::string& from, const std::string& to, std::string::size_type start = 0)
+{
+	std::string result = s;
+
+	while((start = result.find(from, start)) != std::string::npos) {
+		result.replace(start, 1, "\\n");
+		start += 2;
+	}
+
+	return result;
+}
+
+// How I miss currying!
+std::string escape(const std::string& s, std::string::size_type start = 0)
+{
+	return replace(s, "\n", "\\n", start);
+}
+
+template<typename Msg>
+void PrintMessageDemson( const Msg& msg, bool endline = true );
+
+// Prints out the given field of the msg in json-style, i.e. as a quoted string, integer,
+// boolean, ...
+// Only works for primitive types, but calls PrintMessageDemson for message types to recurse.
+// If the field is a repeated field, this only prints the i-th entry.
+template<typename Msg>
+void PrintPrimitiveDemson( const Msg& msg, const google::protobuf::FieldDescriptor* field, int i = 0)
+{
+	using namespace google::protobuf;
+	const Reflection *r = msg.GetReflection();
+
+	// Gah this is just horrible, any idea on how to merge those two?
+	if(field->is_repeated()) {
+		switch(field->cpp_type()) {
+		case FieldDescriptor::CPPTYPE_INT32:  printf("%d", r->GetRepeatedInt32(msg, field, i)); break;
+		case FieldDescriptor::CPPTYPE_INT64:  printf("%lld", r->GetRepeatedInt64(msg, field, i)); break;
+		case FieldDescriptor::CPPTYPE_UINT32: printf("%u", r->GetRepeatedUInt32(msg, field, i)); break;
+		case FieldDescriptor::CPPTYPE_UINT64: printf("%llu", r->GetRepeatedUInt64(msg, field, i)); break;
+		case FieldDescriptor::CPPTYPE_DOUBLE: printf("%g", r->GetRepeatedDouble(msg, field, i)); break;
+		case FieldDescriptor::CPPTYPE_FLOAT:  printf("%f", r->GetRepeatedFloat(msg, field, i)); break;
+		case FieldDescriptor::CPPTYPE_BOOL:   printf("%s", r->GetRepeatedBool(msg, field, i) ? "true" : "false"); break;
+		case FieldDescriptor::CPPTYPE_STRING: printf("\"%s\"", escape(r->GetRepeatedString(msg, field, i)).c_str()); break;
+		case FieldDescriptor::CPPTYPE_ENUM:   printf("\"%s\"", r->GetRepeatedEnum(msg, field, i)->name().c_str()); break;
+		case FieldDescriptor::CPPTYPE_MESSAGE: PrintMessageDemson(r->GetRepeatedMessage(msg, field, i), false); break;
+		}
+	} else {
+		switch(field->cpp_type()) {
+		case FieldDescriptor::CPPTYPE_INT32:  printf("%d", r->GetInt32(msg, field)); break;
+		case FieldDescriptor::CPPTYPE_INT64:  printf("%lld", r->GetInt64(msg, field)); break;
+		case FieldDescriptor::CPPTYPE_UINT32: printf("%u", r->GetUInt32(msg, field)); break;
+		case FieldDescriptor::CPPTYPE_UINT64: printf("%llu", r->GetUInt64(msg, field)); break;
+		case FieldDescriptor::CPPTYPE_DOUBLE: printf("%g", r->GetDouble(msg, field)); break;
+		case FieldDescriptor::CPPTYPE_FLOAT:  printf("%f", r->GetFloat(msg, field)); break;
+		case FieldDescriptor::CPPTYPE_BOOL:   printf("%s", r->GetBool(msg, field) ? "true" : "false"); break;
+		case FieldDescriptor::CPPTYPE_STRING: printf("\"%s\"", escape(r->GetString(msg, field)).c_str()); break;
+		case FieldDescriptor::CPPTYPE_ENUM:   printf("\"%s\"", r->GetEnum(msg, field)->name().c_str()); break;
+		case FieldDescriptor::CPPTYPE_MESSAGE: PrintMessageDemson(r->GetMessage(msg, field), false); break;
+		}
+	}
+}
+
+// Prints out a whole protobuf message in demson format using reflection
+// to get all fields and their values.
+template<typename Msg>
+void PrintMessageDemson( const Msg& msg, bool endline )
+{
+	using namespace google::protobuf;
+	// TODO: get UnknownFieldSet!
+	printf("{\"demsontype\": \"%s\", ", msg.GetTypeName().c_str());
+	const Reflection *r = msg.GetReflection();
+	std::vector<const FieldDescriptor*> fields;
+	r->ListFields(msg, &fields);
+	for(std::vector<const FieldDescriptor*>::iterator iField = fields.begin() ; iField != fields.end() ; iField++) {
+		const FieldDescriptor* field = *iField;
+		printf("\"%s\": ", field->name().c_str());
+		if(field->is_repeated()) {
+			printf("[");
+			for(int i = 0 ; i < r->FieldSize(msg, field) ; ++i) {
+				PrintPrimitiveDemson(msg, field, i);
+				if(i + 1 != r->FieldSize(msg, field))
+					printf(", ");
+			}
+			printf("]");
+		} else {
+			PrintPrimitiveDemson(msg, field);
+		}
+		if(iField + 1 != fields.end())
+			printf(", ");
+	}
+	printf("}");
+	if(endline)
+		printf("\n");
 }
 
 template < class T, int msgType >
@@ -90,8 +183,24 @@ void PrintUserMessage( CDemoFileDump& Demo, const void *parseBuffer, int BufferS
 	if( msg.ParseFromArray( parseBuffer, BufferSize ) )
 	{
 		Demo.MsgPrintf( msg, BufferSize, "%s", msg.DebugString().c_str() );
+#ifdef OUTPUT_AUTODEMSON_USER
+		PrintMessageDemson( msg );
+#endif
 	}
 }
+
+#ifdef OUTPUT_LocationPing
+template<>
+void PrintUserMessage<CDOTAUserMsg_LocationPing, DOTA_UM_LocationPing>( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize )
+{
+	CDOTAUserMsg_LocationPing msg;
+
+	if( !msg.ParseFromArray( parseBuffer, BufferSize ) )
+		return;
+
+	printf( "{\"demsontype\": \"LocationPing\", \"player\": %d, \"x\": %d, \"y\": %d, \"target\": %d, \"direct_ping\": %s }\n", msg.player_id(), msg.location_ping().x(), msg.location_ping().y(), msg.location_ping().target(), msg.location_ping().direct_ping() ? "True" : "False" );
+}
+#endif
 
 void CDemoFileDump::DumpUserMessage( const void *parseBuffer, int BufferSize )
 {
@@ -193,8 +302,19 @@ void PrintNetMessage( CDemoFileDump& Demo, const void *parseBuffer, int BufferSi
 		}
 
 		Demo.MsgPrintf( msg, BufferSize, "%s", msg.DebugString().c_str() );
+#ifdef OUTPUT_AUTODEMSON_NET
+		PrintMessageDemson( msg );
+#endif
 	}
 }
+
+#ifndef OUTPUT_RAWDATA_IN_DEMSON
+// These messages cause problems in the json due to their raw data in strings.
+template<> void PrintNetMessage< CSVCMsg_CreateStringTable, svc_CreateStringTable >( CDemoFileDump&, const void *, int ) { }
+template<> void PrintNetMessage< CSVCMsg_UpdateStringTable, svc_UpdateStringTable >( CDemoFileDump&, const void *, int ) { }
+template<> void PrintNetMessage< CSVCMsg_PacketEntities, svc_PacketEntities >( CDemoFileDump&, const void *, int ) { }
+template<> void PrintNetMessage< CSVCMsg_TempEntities, svc_TempEntities >( CDemoFileDump&, const void *, int ) { }
+#endif
 
 template <>
 void PrintNetMessage< CSVCMsg_UserMessage, svc_UserMessage >( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize )
@@ -202,6 +322,7 @@ void PrintNetMessage< CSVCMsg_UserMessage, svc_UserMessage >( CDemoFileDump& Dem
 	Demo.DumpUserMessage( parseBuffer, BufferSize );
 }
 
+#ifdef OUTPUT_GameEvent
 template <>
 void PrintNetMessage< CSVCMsg_GameEvent, svc_GameEvent >( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize )
 {
@@ -221,11 +342,9 @@ void PrintNetMessage< CSVCMsg_GameEvent, svc_GameEvent >( CDemoFileDump& Demo, c
 
 		if( iDescriptor == Demo.m_GameEventList.descriptors().size() )
 		{
-/*
 #ifdef OUTPUT_ORIGINAL
 			printf( "%s", msg.DebugString().c_str() );
 #endif
-*/
 		}
 		else
 		{
@@ -261,6 +380,7 @@ void PrintNetMessage< CSVCMsg_GameEvent, svc_GameEvent >( CDemoFileDump& Demo, c
 		}
 	}
 }
+#endif
 
 static std::string GetNetMsgName( int Cmd )
 {
@@ -435,12 +555,10 @@ void CDemoFileDump::PrintDemoHeader( EDemoCommands DemoCommand, int tick, int si
 {
 	const std::string& DemoCommandName = EDemoCommands_Name( DemoCommand );
 
-/*
 #ifdef OUTPUT_ORIGINAL
 	printf( "==== #%d: Tick:%d '%s' Size:%d UncompressedSize:%d ====\n",
 		m_nFrameNumber, tick, DemoCommandName.c_str(), size, uncompressed_size );
 #endif
-*/
 }
 
 template < class DEMCLASS >
@@ -516,15 +634,6 @@ void CDemoFileDump::DoDump()
 
 		HANDLE_DemoMsg( FileHeader );
 		HANDLE_DemoMsg( FileInfo ); //TODO: special handling of fileinfo? See 
-		/*
-		// something like:
-		printf("{\"demsontype\": \"demomessage_fileinfo\"");
-		printf(", \"playback_time\": %f",Msg.playback_time());
-		printf(", \"match_id\": %d",Msg.playback_ticks());
-		printf(", \"game_mode\": %d",Msg.game_mode());
-		printf(", \"game_winner\": %d",Msg.game_winner());
-		printf(", \"game_info\": ") //TODO
-		*/
 		HANDLE_DemoMsg( Stop );
 		HANDLE_DemoMsg( SyncTick );
 		HANDLE_DemoMsg( ConsoleCmd );

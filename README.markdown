@@ -12,6 +12,59 @@ in a non-standard location, you can add compiler options using a hack like
 
     CXX="g++ -I/more/include/paths -L/more/library/paths" make
 
+Compile-time settings
+---------------------
+There are some settings you can choose at compile-time in order to control
+what is output. Yes, this would be friendlier if those were runtime arguments,
+but life's not friendly. This allows for minimal changes to the demoinfo2 code
+which Valve "promised" to update at some point. You do know what
+[Valve promises](https://developer.valvesoftware.com/wiki/Valve_Time) are, do you?
+
+Enable these settings by adding CXX flags:
+
+    CXX="g++ -DOUTPUT_ORIGINAL" make
+
+### OUTPUT\_ORIGINAL
+Output whatever the original demoinfo2 code would have output.
+
+### OUTPUT\_AUTODEMSON\_[USER,NET]
+Output demson types generated automatically through reflection.
+
+This is useful in that you get _everything_, i.e. all message and even "hidden"
+fields, which are present in the data but not in the protobuf files.
+(Those were mostly added after the release of demoinfo2.)
+
+This is useless in that you get tons of useless messages and many messages have
+a less-than-optimal design. Disabling this gives you a hand-curated list of
+demsontypes which also expose a friendly interface.
+
+`USER` and `NET` are just two different categories of messages. The user
+messages seem to be more related to the dota game while the net messages seem
+to be related more to steam engine's generic internals, although they contain
+some very dota-related stuff too.
+
+#### OUTPUT\_RAWDATA\_IN\_DEMSON
+Some `NET` messages contain raw data buffers. These are output as json strings
+where non-printable characters are escaped as hex as in `\xFF`. This encoding
+of raw data into strings causes problems with some loading libraries (namely,
+python's `json` module). This options will just skip these messages.
+
+TODO: We need to investigate these messages and find out what's hidden in the
+raw data, as it's probably interesting.
+
+### OUTPUT\_`some message type`
+`some message type` is a string consisting of only the "useful" part of the
+message name. For example, for a `CDOTAUserMsg_LocationPing`, the "useful"
+part is `LocationPing` and thus the define is called `OUTPUT_LocationPing`.
+
+Messages for which this is defined are _additionally_ output by a hand-crafted
+json outputting routine, thus potentially being easier to handle.
+
+Currently, the following ones exist:
+
+    * `OUTPUT_LocationPing`
+    * `OUTPUT_GameEvent`
+
 Usage
 =====
 
@@ -28,9 +81,9 @@ Note that only the combatlog gameevents are output by this script.
 
 Output format
 =============
-Currently, each line of the file contains a json object. This object is either
-a listof strings, in which case the object is the `combatlog` string table, or
-it is a dict, in which case it is a game event.
+Currently, each line of the file contains a json object. This object is always
+a dict which contains at least the key `demsontype`. This key determines the
+shape of the dict - it is its class if you like to think static typing.
 
 demsontype
 ----------
