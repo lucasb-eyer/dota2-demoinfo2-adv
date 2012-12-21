@@ -2,10 +2,10 @@ import json
 import sys
 
 
-# Note: tr stands for translate.
 def is_combatlog_stringtable(ge):
     return ge['demsontype'] == 'stringtable_combatlog' or (ge['demsontype'] == 'stringtable' and ge['tablename'] == 'CombatLogNames')
 
+# Note: tr stands for translate.
 to_tr = ('attackername', 'inflictorname', 'sourcename', 'targetname', 'targetsourcename')
 
 # Fuck, I love python. Had to resist not to do this in one line!
