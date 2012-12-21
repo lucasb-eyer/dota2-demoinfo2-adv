@@ -7,8 +7,9 @@ Make sure you have the following prerequisites installed:
     - You can run `PROTOC=/path/to/protoc make` if that's not the case.
 - [snappy (1.0.5)](http://code.google.com/p/snappy)
 
-You can then compile the project by simply running `make`. If anything is
-in a non-standard location, you can add compiler options using a hack like
+You can then compile the project by simply running `make`. (But read the
+compile-time settings section beforehand.) If anything is in a non-standard
+location, you can add compiler options using a hack like
 
     CXX="g++ -I/more/include/paths -L/more/library/paths" make
 
@@ -22,7 +23,7 @@ which Valve "promised" to update at some point. You do know what
 
 Enable these settings by adding CXX flags:
 
-    CXX="g++ -DOUTPUT_ORIGINAL" make
+    CXX="g++ -DOUTPUT_AUTODEMSON_USER -DOUTPUT_AUTODEMSON_NET" make
 
 ### OUTPUT\_ORIGINAL
 Output whatever the original demoinfo2 code would have output.
