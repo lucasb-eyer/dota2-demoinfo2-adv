@@ -149,13 +149,13 @@ void PrintMessageDemson( const Msg& msg, bool endline )
 {
 	using namespace google::protobuf;
 	// TODO: get UnknownFieldSet!
-	printf("{\"demsontype\": \"%s\", ", msg.GetTypeName().c_str());
+	printf("{\"demsontype\": \"%s\"", msg.GetTypeName().c_str());
 	const Reflection *r = msg.GetReflection();
 	std::vector<const FieldDescriptor*> fields;
 	r->ListFields(msg, &fields);
 	for(std::vector<const FieldDescriptor*>::iterator iField = fields.begin() ; iField != fields.end() ; iField++) {
 		const FieldDescriptor* field = *iField;
-		printf("\"%s\": ", field->name().c_str());
+		printf(", \"%s\": ", field->name().c_str());
 		if(field->is_repeated()) {
 			printf("[");
 			for(int i = 0 ; i < r->FieldSize(msg, field) ; ++i) {
@@ -167,8 +167,6 @@ void PrintMessageDemson( const Msg& msg, bool endline )
 		} else {
 			PrintPrimitiveDemson(msg, field);
 		}
-		if(iField + 1 != fields.end())
-			printf(", ");
 	}
 	printf("}");
 	if(endline)
