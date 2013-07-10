@@ -1,0 +1,9 @@
+#! /usr/bin/env bash
+
+if [ $# -ne 1 ]
+then
+  echo "Usage: `basename $0` {replay.dem}"
+  exit 1
+fi
+
+demoinfo2 $1 2>/dev/null #| ids_to_names.py
