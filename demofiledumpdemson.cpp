@@ -1,24 +1,24 @@
 //====== Copyright (c) 2012, Valve Corporation, All rights reserved. ========//
 //
-// Redistribution and use in source and binary forms, with or without 
+// Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 //
 // Redistributions of source code must retain the above copyright notice, this
 // list of conditions and the following disclaimer.
-// Redistributions in binary form must reproduce the above copyright notice, 
-// this list of conditions and the following disclaimer in the documentation 
+// Redistributions in binary form must reproduce the above copyright notice,
+// this list of conditions and the following disclaimer in the documentation
 // and/or other materials provided with the distribution.
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF 
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 // THE POSSIBILITY OF SUCH DAMAGE.
 //===========================================================================//
 
@@ -28,9 +28,9 @@
 #include "demofile.h"
 #include "demofiledumpdemson.h"
 
-#include "google/protobuf/descriptor.h"
-#include "google/protobuf/reflection_ops.h"
-#include "google/protobuf/descriptor.pb.h"
+#include <google/protobuf/descriptor.h>
+#include <google/protobuf/reflection_ops.h>
+#include <google/protobuf/descriptor.pb.h>
 
 #include "generated_proto/usermessages.pb.h"
 #include "generated_proto/ai_activity.pb.h"
@@ -186,6 +186,31 @@ void PrintUserMessage( CDemoFileDump& Demo, const void *parseBuffer, int BufferS
 #endif
 	}
 }
+
+//TODO: see enum DOTA_CHAT_MESSAGE in dota_usermessages.proto:120 for what-the-hell-is-going-on
+#ifdef OUTPUT_ChatEvent
+template<>
+void PrintUserMessage<CDOTAUserMsg_ChatEvent, DOTA_UM_ChatEvent>( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize )
+{
+	CDOTAUserMsg_ChatEvent msg;
+
+	if( !msg.ParseFromArray( parseBuffer, BufferSize ) )
+		return;
+
+	printf( "{\"demsontype\": \"chatevent\","
+        "\"type\": %d, "
+        "\"value\": %d, "
+        "\"playerid_1\": %d, "
+        "\"playerid_2\": %d, "
+        "\"playerid_3\": %d, "
+        "\"playerid_4\": %d, "
+        "\"playerid_5\": %d, "
+        "\"playerid_6\": %d "
+        "}\n", msg.type(), msg.value(), msg.playerid_1(),
+        msg.playerid_2(), msg.playerid_3(), msg.playerid_4(),
+        msg.playerid_5(), msg.playerid_6());
+}
+#endif
 
 #ifdef OUTPUT_LocationPing
 template<>
@@ -396,6 +421,7 @@ static std::string GetNetMsgName( int Cmd )
 	return "NETMSG_???";
 }
 
+//TODO: HERE
 void CDemoFileDump::DumpDemoPacket( const std::string& buf )
 {
 	size_t index = 0;
@@ -485,7 +511,9 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 		// skip over noninteresting stringtables, just mention them
 		if( !in(Table.table_name(), interesting_tables) ) {
 			//TODO: only output if debug flag? (stringtable_ignored to find/highlight those entries better)
+            #ifdef OUTPUT_StringTableIgnored
 			printf("{\"demsontype\": \"stringtable_ignored\", \"tablename\": \"%s\"}\n", Table.table_name().c_str());
+            #endif
 			continue;
 		}
 
@@ -595,7 +623,7 @@ void PrintDemoMessage<CDemoFileInfo_t>( CDemoFileDump& Demo, bool bCompressed, i
 	if( Demo.m_demofile.ReadMessage( &Msg, bCompressed, &size, &uncompressed_size ) )
 	{
 		Demo.PrintDemoHeader( Msg.GetType(), tick, size, uncompressed_size );
-		
+
 		printf( "{\"demsontype\": \"fileinfo\", \"playback_time\": %f, \"playback_ticks\": %d, \"playback_frames\": %d}\n",
 				Msg.playback_time(), Msg.playback_ticks(), Msg.playback_frames());
 		const CGameInfo_CDotaGameInfo& gameinfo = Msg.game_info().dota();
@@ -616,7 +644,7 @@ void CDemoFileDump::DoDump()
 {
 	bool bStopReading = false;
 
-	for( m_nFrameNumber = 0; !bStopReading; m_nFrameNumber++ )
+	for( m_nFrameNumber = 0; !bStopReading; m_nFrameNumber++ ) //TODO HERE: really frameNumber?
 	{
 		int tick = 0;
 		int size = 0;
@@ -633,7 +661,7 @@ void CDemoFileDump::DoDump()
 #define HANDLE_DemoMsg( _x )	case DEM_ ## _x: PrintDemoMessage< CDemo ## _x ## _t >( *this, bCompressed, tick, size, uncompressed_size ); break
 
 		HANDLE_DemoMsg( FileHeader );
-		HANDLE_DemoMsg( FileInfo ); //TODO: special handling of fileinfo? See 
+		HANDLE_DemoMsg( FileInfo );
 		HANDLE_DemoMsg( Stop );
 		HANDLE_DemoMsg( SyncTick );
 		HANDLE_DemoMsg( ConsoleCmd );
