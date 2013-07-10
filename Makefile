@@ -9,9 +9,9 @@ PROTO_OBJ_FILES=$(PROTO_CPP_FILES:.cc=.o)
 
 CXX?=g++
 PROTOC?=protoc
-LD_FLAGS=-lsnappy -lprotobuf -L/usr/local/lib
-CXX_FLAGS=-I/usr/local/include
-PROTOBUF_FLAGS=-I/usr/local/include
+LD_FLAGS=-lsnappy -lprotobuf -lpthread -L/usr/lib
+CXX_FLAGS=-I/usr/include -L/usr/lib -DOUTPUT_GameEvent -DOUTPUT_ChatEvent
+ROTOBUF_FLAGS=-I/usr/include
 
 all: ${EXECUTABLE}
 
@@ -21,7 +21,7 @@ clean:
 	rm -f generated_proto/*
 
 generated_proto/%.pb.cc: %.proto
-	${PROTOC} ${PROTO_SRC_FILES} ${PROTOBUF_FLAGS} -I. --cpp_out=generated_proto
+	${PROTOC} ${PROTO_SRC_FILES} ${PROTOBUF_FLAGS} -I. -I/usr/include --cpp_out=generated_proto
 
 ${EXECUTABLE}: ${PROTO_OBJ_FILES} ${OBJ_FILES}
 	${CXX} ${LD_FLAGS} -o $@ ${OBJ_FILES} ${PROTO_OBJ_FILES}

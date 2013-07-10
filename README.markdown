@@ -65,6 +65,7 @@ Currently, the following ones exist:
 
     * `OUTPUT_LocationPing`
     * `OUTPUT_GameEvent`
+    * `OUTPUT_ChatEvent`
 
 Usage
 =====
@@ -102,7 +103,7 @@ gameinfo
 --------
 `"demsontype": "gameinfo"`
 
-Containsvery useful info about the game like the `match_id`.
+Contains very useful info about the game like the `match_id`.
 * `game_mode`: TODO
 * `game_winner`: TODO (wtf is 3? why not only 0/1 or so?)
 * `players`: A list of information (dicts) about the players in the game.
