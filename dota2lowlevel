@@ -6,4 +6,4 @@ then
   exit 1
 fi
 
-demoinfo2 $1 2>/dev/null #| ids_to_names.py
+demoinfo2 $1 2>/dev/null | preprocess_raw_demson.py
