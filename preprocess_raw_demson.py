@@ -2,6 +2,7 @@
 import json
 import sys
 
+# puts game/file info first, translated game events laters
 # replaces ids in gameevents by strings (does not output string tables)
 # replaces playerids/type in chateevents by player/activity strings
 
@@ -9,6 +10,7 @@ def is_combatlog_stringtable(ge):
     return ge['demsontype'] == 'stringtable_combatlog' or (ge['demsontype'] == 'stringtable' and ge['tablename'] == 'CombatLogNames')
 
 def get_demsontype_item(demsontype, replay):
+    """ picks out first object with a given demsontype string from the replay object array """
     return filter(lambda x: x["demsontype"] == demsontype, replay)[0]
 
 # Fuck, I love python. Had to resist not to do this in one line!

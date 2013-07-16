@@ -174,7 +174,7 @@ void PrintMessageDemson( const Msg& msg, bool endline )
 }
 
 template < class T, int msgType >
-void PrintUserMessage( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize )
+void PrintUserMessage( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize, int tick )
 {
 	T msg;
 
@@ -190,14 +190,15 @@ void PrintUserMessage( CDemoFileDump& Demo, const void *parseBuffer, int BufferS
 //TODO: see enum DOTA_CHAT_MESSAGE in dota_usermessages.proto:120 for what-the-hell-is-going-on
 #ifdef OUTPUT_ChatEvent
 template<>
-void PrintUserMessage<CDOTAUserMsg_ChatEvent, DOTA_UM_ChatEvent>( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize )
+void PrintUserMessage<CDOTAUserMsg_ChatEvent, DOTA_UM_ChatEvent>( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize, int tick )
 {
 	CDOTAUserMsg_ChatEvent msg;
 
 	if( !msg.ParseFromArray( parseBuffer, BufferSize ) )
 		return;
 
-	printf( "{\"demsontype\": \"chatevent\","
+    //TODO: game time / tick count?
+	printf( "{\"demsontype\": \"chatevent\", "
         "\"type\": %d, "
         "\"value\": %d, "
         "\"playerid_1\": %d, "
@@ -205,16 +206,39 @@ void PrintUserMessage<CDOTAUserMsg_ChatEvent, DOTA_UM_ChatEvent>( CDemoFileDump&
         "\"playerid_3\": %d, "
         "\"playerid_4\": %d, "
         "\"playerid_5\": %d, "
-        "\"playerid_6\": %d "
+        "\"playerid_6\": %d, "
+        "\"tick\": %d "
         "}\n", msg.type(), msg.value(), msg.playerid_1(),
         msg.playerid_2(), msg.playerid_3(), msg.playerid_4(),
-        msg.playerid_5(), msg.playerid_6());
+        msg.playerid_5(), msg.playerid_6(), tick);
 }
+#endif
+
+#ifdef OUTPUT_UnitEvent
+/*
+//NOTE: good for nothing, the announcer sound bits are not contained in these anymore (-80 and -3 seconds prior).
+//Was meant for synchronization (timestamp with replay game time).
+template<>
+void PrintUserMessage<CDOTAUserMsg_UnitEvent, DOTA_UM_UnitEvent>( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize, int tick )
+{
+	CDOTAUserMsg_UnitEvent msg;
+
+	if ( !msg.ParseFromArray( parseBuffer, BufferSize ) )
+		return;
+
+    if ( !strcmp( msg.msg_type(), "DOTA_UNIT_SPEECH_CLIENTSIDE_RULES" ) ) {
+	    printf( "{\"demsontype\": \"unitevent\", "
+            "\"tick\": %d "
+            "}\n" tick);
+        //PrintMessageDemson( msg );
+    }
+}
+*/
 #endif
 
 #ifdef OUTPUT_LocationPing
 template<>
-void PrintUserMessage<CDOTAUserMsg_LocationPing, DOTA_UM_LocationPing>( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize )
+void PrintUserMessage<CDOTAUserMsg_LocationPing, DOTA_UM_LocationPing>( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize, int tick )
 {
 	CDOTAUserMsg_LocationPing msg;
 
@@ -225,7 +249,7 @@ void PrintUserMessage<CDOTAUserMsg_LocationPing, DOTA_UM_LocationPing>( CDemoFil
 }
 #endif
 
-void CDemoFileDump::DumpUserMessage( const void *parseBuffer, int BufferSize )
+void CDemoFileDump::DumpUserMessage( const void *parseBuffer, int BufferSize, int tick )
 {
 	CSVCMsg_UserMessage userMessage;
 
@@ -237,8 +261,8 @@ void CDemoFileDump::DumpUserMessage( const void *parseBuffer, int BufferSize )
 
 		switch( Cmd )
 		{
-#define HANDLE_UserMsg( _x )			case UM_ ## _x: PrintUserMessage< CUserMsg_ ## _x, UM_ ## _x >( *this, parseBufferUM, SizeUM ); break
-#define HANDLE_DOTA_UserMsg( _x )		case DOTA_UM_ ## _x: PrintUserMessage< CDOTAUserMsg_ ## _x, DOTA_UM_ ## _x >( *this, parseBufferUM, SizeUM ); break
+#define HANDLE_UserMsg( _x )			case UM_ ## _x: PrintUserMessage< CUserMsg_ ## _x, UM_ ## _x >( *this, parseBufferUM, SizeUM, tick ); break
+#define HANDLE_DOTA_UserMsg( _x )		case DOTA_UM_ ## _x: PrintUserMessage< CDOTAUserMsg_ ## _x, DOTA_UM_ ## _x >( *this, parseBufferUM, SizeUM, tick ); break
 
 		default:
 			fprintf( stderr, "WARNING. DumpUserMessage(): Unknown user message %d.\n", Cmd );
@@ -314,7 +338,7 @@ void CDemoFileDump::DumpUserMessage( const void *parseBuffer, int BufferSize )
 }
 
 template < class T, int msgType >
-void PrintNetMessage( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize )
+void PrintNetMessage( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize, int tick )
 {
 	T msg;
 
@@ -334,21 +358,21 @@ void PrintNetMessage( CDemoFileDump& Demo, const void *parseBuffer, int BufferSi
 
 #ifndef OUTPUT_RAWDATA_IN_DEMSON
 // These messages cause problems in the json due to their raw data in strings.
-template<> void PrintNetMessage< CSVCMsg_CreateStringTable, svc_CreateStringTable >( CDemoFileDump&, const void *, int ) { }
-template<> void PrintNetMessage< CSVCMsg_UpdateStringTable, svc_UpdateStringTable >( CDemoFileDump&, const void *, int ) { }
-template<> void PrintNetMessage< CSVCMsg_PacketEntities, svc_PacketEntities >( CDemoFileDump&, const void *, int ) { }
-template<> void PrintNetMessage< CSVCMsg_TempEntities, svc_TempEntities >( CDemoFileDump&, const void *, int ) { }
+template<> void PrintNetMessage< CSVCMsg_CreateStringTable, svc_CreateStringTable >( CDemoFileDump&, const void *, int, int ) { }
+template<> void PrintNetMessage< CSVCMsg_UpdateStringTable, svc_UpdateStringTable >( CDemoFileDump&, const void *, int, int ) { }
+template<> void PrintNetMessage< CSVCMsg_PacketEntities, svc_PacketEntities >( CDemoFileDump&, const void *, int, int ) { }
+template<> void PrintNetMessage< CSVCMsg_TempEntities, svc_TempEntities >( CDemoFileDump&, const void *, int, int ) { }
 #endif
 
 template <>
-void PrintNetMessage< CSVCMsg_UserMessage, svc_UserMessage >( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize )
+void PrintNetMessage< CSVCMsg_UserMessage, svc_UserMessage >( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize, int tick )
 {
-	Demo.DumpUserMessage( parseBuffer, BufferSize );
+	Demo.DumpUserMessage( parseBuffer, BufferSize, tick );
 }
 
 #ifdef OUTPUT_GameEvent
 template <>
-void PrintNetMessage< CSVCMsg_GameEvent, svc_GameEvent >( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize )
+void PrintNetMessage< CSVCMsg_GameEvent, svc_GameEvent >( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize, int tick )
 {
 	CSVCMsg_GameEvent msg;
 
@@ -375,8 +399,10 @@ void PrintNetMessage< CSVCMsg_GameEvent, svc_GameEvent >( CDemoFileDump& Demo, c
 			int numKeys = msg.keys().size();
 			const CSVCMsg_GameEventList::descriptor_t& Descriptor = Demo.m_GameEventList.descriptors( iDescriptor );
 
-			printf( "{\"demsontype\": \"gameevent\", \"evname\": \"%s\", \"evid\": %d, \"evname2\": \"%s\"", Descriptor.name().c_str(), msg.eventid(),
-				msg.has_event_name() ? msg.event_name().c_str() : "" );
+            //TODO: game time / tick count?
+			printf( "{\"demsontype\": \"gameevent\", \"evname\": \"%s\", \"evid\": %d, \"evname2\": \"%s\", \"tick\": %d",
+                Descriptor.name().c_str(), msg.eventid(),
+				msg.has_event_name() ? msg.event_name().c_str() : "", tick );
 
 			for( int i = 0; i < numKeys; i++ )
 			{
@@ -422,7 +448,7 @@ static std::string GetNetMsgName( int Cmd )
 }
 
 //TODO: HERE
-void CDemoFileDump::DumpDemoPacket( const std::string& buf )
+void CDemoFileDump::DumpDemoPacket( const std::string& buf, int tick )
 {
 	size_t index = 0;
 
@@ -440,8 +466,8 @@ void CDemoFileDump::DumpDemoPacket( const std::string& buf )
 
 		switch( Cmd )
 		{
-#define HANDLE_NetMsg( _x )		case net_ ## _x: PrintNetMessage< CNETMsg_ ## _x, net_ ## _x >( *this, &buf[ index ], Size ); break
-#define HANDLE_SvcMsg( _x )		case svc_ ## _x: PrintNetMessage< CSVCMsg_ ## _x, svc_ ## _x >( *this, &buf[ index ], Size ); break
+#define HANDLE_NetMsg( _x )		case net_ ## _x: PrintNetMessage< CNETMsg_ ## _x, net_ ## _x >( *this, &buf[ index ], Size, tick ); break
+#define HANDLE_SvcMsg( _x )		case svc_ ## _x: PrintNetMessage< CSVCMsg_ ## _x, svc_ ## _x >( *this, &buf[ index ], Size, tick ); break
 
 		default:
 			fprintf( stderr, "WARNING. DumpUserMessage(): Unknown netmessage %d.\n", Cmd );
@@ -686,7 +712,7 @@ void CDemoFileDump::DoDump()
 					DumpDemoStringTable( *this, FullPacket.string_table() );
 
 					// Ok, now the packet.
-					DumpDemoPacket( FullPacket.packet().data() );
+					DumpDemoPacket( FullPacket.packet().data(), tick );
 				}
 			}
 			break;
@@ -700,7 +726,7 @@ void CDemoFileDump::DoDump()
 				{
 					PrintDemoHeader( DemoCommand, tick, size, uncompressed_size );
 
-					DumpDemoPacket( Packet.data() );
+					DumpDemoPacket( Packet.data(), tick );
 				}
 			}
 			break;

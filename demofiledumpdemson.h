@@ -46,8 +46,8 @@ public:
 //TODO: is this really needed here? Forward declarations?
 //yes, those functions are used in non-class functions apparently
 public:
-	void DumpDemoPacket( const std::string& buf );
-	void DumpUserMessage( const void *parseBuffer, int BufferSize );
+	void DumpDemoPacket( const std::string& buf, int tick );
+	void DumpUserMessage( const void *parseBuffer, int BufferSize, int tick );
 	void PrintDemoHeader( EDemoCommands DemoCommand, int tick, int size, int uncompressed_size );
 	void MsgPrintf( const ::google::protobuf::Message& msg, int size, const char *fmt, ... );
 

@@ -1,9 +1,10 @@
 #! /usr/bin/env bash
 
-if [ $# -ne 1 ]
+if [ $# -ne 2 ]
 then
-  echo "Usage: `basename $0` {replay.dem}"
+  echo "Usage: `basename $0` {replay.dem} {replay.rawdemson}"
   exit 1
 fi
 
-demoinfo2 $1 2>/dev/null | preprocess_raw_demson.py
+echo "demoinfo2 $1 2>/dev/null | preprocess_raw_demson.py > $2"
+demoinfo2 $1 2>/dev/null | preprocess_raw_demson.py > $2
