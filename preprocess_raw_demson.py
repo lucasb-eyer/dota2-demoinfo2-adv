@@ -2,6 +2,8 @@
 import json
 import sys
 
+from cgi import escape
+
 # puts game/file info first, translated game events laters
 # replaces ids in gameevents by strings (does not output string tables)
 # replaces playerids/type in chateevents by player/activity strings
@@ -13,8 +15,13 @@ def get_demsontype_item(demsontype, replay):
     """ picks out first object with a given demsontype string from the replay object array """
     return filter(lambda x: x["demsontype"] == demsontype, replay)[0]
 
-# Fuck, I love python. Had to resist not to do this in one line!
-replay = map(json.loads, sys.stdin) #load linewise json from stdin
+replay = []
+## Fuck, I love python. Had to resist not to do this in one line!
+#replay = map(json.loads, sys.stdin) #load linewise json from stdin
+
+for line in sys.stdin.readlines():
+    #TODO: quotes in a name will probably break this, cpp should escape all strings dumped?
+    replay.append(json.loads(line.replace("\\","\\\\")))
 
 # Note: tr stands for translate.
 #keys which need to be translated
