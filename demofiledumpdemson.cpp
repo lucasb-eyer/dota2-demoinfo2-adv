@@ -38,6 +38,30 @@
 #include "generated_proto/dota_commonmessages.pb.h"
 #include "generated_proto/dota_usermessages.pb.h"
 
+#include <string>
+#include <sstream>
+
+// helper method to deal with unicode fÜn. Source: http://stackoverflow.com/questions/7724448/simple-json-string-escape-for-c
+std::string escapeJsonString(const std::string& input) {
+    std::ostringstream ss;
+    //for (auto iter = input.cbegin(); iter != input.cend(); iter++) {
+    //C++98/03:
+    for (std::string::const_iterator iter = input.begin(); iter != input.end(); iter++) {
+        switch (*iter) {
+            case '\\': ss << "\\\\"; break;
+            case '"': ss << "\\\""; break;
+            case '/': ss << "\\/"; break;
+            case '\b': ss << "\\b"; break;
+            case '\f': ss << "\\f"; break;
+            case '\n': ss << "\\n"; break;
+            case '\r': ss << "\\r"; break;
+            case '\t': ss << "\\t"; break;
+            default: ss << *iter; break;
+        }
+    }
+    return ss.str();
+}
+
 void fatal_errorf( const char* fmt, ... )
 {
     va_list  vlist;
@@ -245,6 +269,7 @@ void PrintUserMessage<CDOTAUserMsg_LocationPing, DOTA_UM_LocationPing>( CDemoFil
 	if( !msg.ParseFromArray( parseBuffer, BufferSize ) )
 		return;
 
+    //TODO: escape for json?
 	printf( "{\"demsontype\": \"LocationPing\", \"player\": %d, \"x\": %d, \"y\": %d, \"target\": %d, \"direct_ping\": %s }\n", msg.player_id(), msg.location_ping().x(), msg.location_ping().y(), msg.location_ping().target(), msg.location_ping().direct_ping() ? "True" : "False" );
 }
 #endif
@@ -401,18 +426,18 @@ void PrintNetMessage< CSVCMsg_GameEvent, svc_GameEvent >( CDemoFileDump& Demo, c
 
             //TODO: game time / tick count?
 			printf( "{\"demsontype\": \"gameevent\", \"evname\": \"%s\", \"evid\": %d, \"evname2\": \"%s\", \"tick\": %d",
-                Descriptor.name().c_str(), msg.eventid(),
-				msg.has_event_name() ? msg.event_name().c_str() : "", tick );
+                escapeJsonString(Descriptor.name()).c_str(), msg.eventid(),
+				msg.has_event_name() ? escapeJsonString(msg.event_name()).c_str() : "", tick );
 
 			for( int i = 0; i < numKeys; i++ )
 			{
 				const CSVCMsg_GameEventList::key_t& Key = Descriptor.keys( i );
 				const CSVCMsg_GameEvent::key_t& KeyValue = msg.keys( i );
 
-				printf(", \"%s\": ", Key.name().c_str() );
+				printf(", \"%s\": ", escapeJsonString(Key.name()).c_str() );
 
 				if( KeyValue.has_val_string() )
-					printf( "\"%s\"", KeyValue.val_string().c_str() );
+					printf( "\"%s\"", escapeJsonString(KeyValue.val_string()).c_str() );
 				if( KeyValue.has_val_float() )
 					printf( "%f", KeyValue.val_float() );
 				if( KeyValue.has_val_long() )
@@ -538,12 +563,17 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 		if( !in(Table.table_name(), interesting_tables) ) {
 			//TODO: only output if debug flag? (stringtable_ignored to find/highlight those entries better)
             #ifdef OUTPUT_StringTableIgnored
-			printf("{\"demsontype\": \"stringtable_ignored\", \"tablename\": \"%s\"}\n", Table.table_name().c_str());
+			printf("{\"demsontype\": \"stringtable_ignored\", \"tablename\": \"%s\"}\n", escapeJsonString(Table.table_name()).c_str());
             #endif
 			continue;
 		}
 
-		printf("{\"demsontype\": \"stringtable\", \"tablename\": \"%s\", \"stringtable\": [", Table.table_name().c_str());
+        // skip the utterly broken userinfo string table we don't even need
+        if ( !strcmp( Table.table_name().c_str(), "userinfo" ) ) {
+            continue;
+        }
+
+		printf("{\"demsontype\": \"stringtable\", \"tablename\": \"%s\", \"stringtable\": [", escapeJsonString(Table.table_name()).c_str());
 
 		for( int itemid = 0; itemid < Table.items().size(); itemid++ )
 		{
@@ -556,7 +586,7 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 				if( Entry.ParseFromString( Item.data() ) )
 				{
 					std::string EntryStr = Entry.DebugString();
-					printf( "\"%s\"", EntryStr.c_str() );
+					printf( "\"%s\"", escapeJsonString(EntryStr).c_str() );
 				}
 			}
 			//TODO: this does not work - nothing is printed if the size is not ignored!
@@ -585,12 +615,12 @@ static bool DumpDemoStringTable( CDemoFileDump& Demo, const CDemoStringTables& S
 				const player_info_s *pPlayerInfo = ( const player_info_s * )&Item.data()[ 0 ];
 
 				printf("{\"xuid\":%lld, \"name\": \"%s\", \"userID\": %d, \"guid\": \"%s\", \"friendsID\":%d, \"friendsName\": \"%s\", \"fakeplayer\": %s, \"ishltv\": %s, \"filesDownloaded\":%d}",
-					pPlayerInfo->xuid, pPlayerInfo->name, pPlayerInfo->userID, pPlayerInfo->guid, pPlayerInfo->friendsID,
-					pPlayerInfo->friendsName, pPlayerInfo->fakeplayer ? "true" : "false", pPlayerInfo->ishltv ? "true" : "false", pPlayerInfo->filesDownloaded );
+					pPlayerInfo->xuid, escapeJsonString(pPlayerInfo->name).c_str(), pPlayerInfo->userID, escapeJsonString(pPlayerInfo->guid).c_str(), pPlayerInfo->friendsID,
+					escapeJsonString(pPlayerInfo->friendsName).c_str(), pPlayerInfo->fakeplayer ? "true" : "false", pPlayerInfo->ishltv ? "true" : "false", pPlayerInfo->filesDownloaded );
 			}
 			else
 			{
-				printf("\"%s\"", Item.str().c_str());
+				printf("\"%s\"", escapeJsonString(Item.str()).c_str());
 			}
 
 			// sep the entries with commas
@@ -658,7 +688,7 @@ void PrintDemoMessage<CDemoFileInfo_t>( CDemoFileDump& Demo, bool bCompressed, i
 		for( int iplayer = 0 ; iplayer < gameinfo.player_info_size() ; ++iplayer ) {
 			const CGameInfo_CDotaGameInfo_CPlayerInfo& player = gameinfo.player_info(iplayer);
 			printf( "{\"hero_name\": \"%s\", \"player_name\": \"%s\", \"is_fake_client\": %s}",
-					player.hero_name().c_str(), player.player_name().c_str(), player.is_fake_client() ? "true" : "false" );
+					escapeJsonString(player.hero_name()).c_str(), escapeJsonString(player.player_name()).c_str(), player.is_fake_client() ? "true" : "false" );
 			if( iplayer < gameinfo.player_info_size()-1 )
 				printf( ", " );
 		}

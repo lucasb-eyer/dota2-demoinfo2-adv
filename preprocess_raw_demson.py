@@ -15,13 +15,14 @@ def get_demsontype_item(demsontype, replay):
     """ picks out first object with a given demsontype string from the replay object array """
     return filter(lambda x: x["demsontype"] == demsontype, replay)[0]
 
-replay = []
 ## Fuck, I love python. Had to resist not to do this in one line!
-#replay = map(json.loads, sys.stdin) #load linewise json from stdin
+replay = map(json.loads, sys.stdin) #load linewise json from stdin
 
-for line in sys.stdin.readlines():
-    #TODO: quotes in a name will probably break this, cpp should escape all strings dumped?
-    replay.append(json.loads(line.replace("\\","\\\\")))
+# DEBUG: this was an attempt to defubar an invalid "json" output. Fixed in the cpp source
+#replay = []
+#for line in sys.stdin.readlines():
+#    print line
+#    replay.append(json.loads(line))
 
 # Note: tr stands for translate.
 #keys which need to be translated
