@@ -239,9 +239,9 @@ void PrintUserMessage<CDOTAUserMsg_ChatEvent, DOTA_UM_ChatEvent>( CDemoFileDump&
 #endif
 
 #ifdef OUTPUT_UnitEvent
-/*
-//NOTE: good for nothing, the announcer sound bits are not contained in these anymore (-80 and -3 seconds prior).
-//Was meant for synchronization (timestamp with replay game time).
+//TODO: proper output?
+//the announcer sound bits (-80 seconds = 'pre_game' and -3 seconds = 'game_start').
+//useful for synchronization (timestamp with replay game time).
 template<>
 void PrintUserMessage<CDOTAUserMsg_UnitEvent, DOTA_UM_UnitEvent>( CDemoFileDump& Demo, const void *parseBuffer, int BufferSize, int tick )
 {
@@ -250,14 +250,9 @@ void PrintUserMessage<CDOTAUserMsg_UnitEvent, DOTA_UM_UnitEvent>( CDemoFileDump&
 	if ( !msg.ParseFromArray( parseBuffer, BufferSize ) )
 		return;
 
-    if ( !strcmp( msg.msg_type(), "DOTA_UNIT_SPEECH_CLIENTSIDE_RULES" ) ) {
-	    printf( "{\"demsontype\": \"unitevent\", "
-            "\"tick\": %d "
-            "}\n" tick);
-        //PrintMessageDemson( msg );
-    }
+    //Demo.MsgPrintf( msg, BufferSize, "%s", msg.DebugString().c_str() );
+    PrintMessageDemson( msg );
 }
-*/
 #endif
 
 #ifdef OUTPUT_LocationPing

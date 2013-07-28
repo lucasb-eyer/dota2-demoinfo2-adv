@@ -11,6 +11,7 @@ CXX?=g++
 PROTOC?=protoc
 LD_FLAGS=-lsnappy -lprotobuf -lpthread -L/usr/lib
 CXX_FLAGS=-I/usr/include -L/usr/lib -DOUTPUT_GameEvent -DOUTPUT_ChatEvent
+CXX_FLAGS=-I/usr/include -L/usr/lib -DOUTPUT_GameEvent -DOUTPUT_ChatEvent -DOUTPUT_UnitEvent #-DOUTPUT_ORIGINAL
 ROTOBUF_FLAGS=-I/usr/include
 
 all: ${EXECUTABLE}
