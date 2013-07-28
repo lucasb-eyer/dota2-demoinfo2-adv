@@ -124,14 +124,14 @@ std::string escape(const std::string& s, std::string::size_type start = 0)
 }
 
 template<typename Msg>
-void PrintMessageDemson( const Msg& msg, bool endline = true );
+void PrintMessageDemson( const Msg& msg, int tick,  bool endline = true );
 
 // Prints out the given field of the msg in json-style, i.e. as a quoted string, integer,
 // boolean, ...
 // Only works for primitive types, but calls PrintMessageDemson for message types to recurse.
 // If the field is a repeated field, this only prints the i-th entry.
 template<typename Msg>
-void PrintPrimitiveDemson( const Msg& msg, const google::protobuf::FieldDescriptor* field, int i = 0)
+void PrintPrimitiveDemson( const Msg& msg, const google::protobuf::FieldDescriptor* field, int tick, int i = 0)
 {
 	using namespace google::protobuf;
 	const Reflection *r = msg.GetReflection();
@@ -148,7 +148,7 @@ void PrintPrimitiveDemson( const Msg& msg, const google::protobuf::FieldDescript
 		case FieldDescriptor::CPPTYPE_BOOL:   printf("%s", r->GetRepeatedBool(msg, field, i) ? "true" : "false"); break;
 		case FieldDescriptor::CPPTYPE_STRING: printf("\"%s\"", escape(r->GetRepeatedString(msg, field, i)).c_str()); break;
 		case FieldDescriptor::CPPTYPE_ENUM:   printf("\"%s\"", r->GetRepeatedEnum(msg, field, i)->name().c_str()); break;
-		case FieldDescriptor::CPPTYPE_MESSAGE: PrintMessageDemson(r->GetRepeatedMessage(msg, field, i), false); break;
+		case FieldDescriptor::CPPTYPE_MESSAGE: PrintMessageDemson(r->GetRepeatedMessage(msg, field, i), tick, false); break;
 		}
 	} else {
 		switch(field->cpp_type()) {
@@ -161,7 +161,7 @@ void PrintPrimitiveDemson( const Msg& msg, const google::protobuf::FieldDescript
 		case FieldDescriptor::CPPTYPE_BOOL:   printf("%s", r->GetBool(msg, field) ? "true" : "false"); break;
 		case FieldDescriptor::CPPTYPE_STRING: printf("\"%s\"", escape(r->GetString(msg, field)).c_str()); break;
 		case FieldDescriptor::CPPTYPE_ENUM:   printf("\"%s\"", r->GetEnum(msg, field)->name().c_str()); break;
-		case FieldDescriptor::CPPTYPE_MESSAGE: PrintMessageDemson(r->GetMessage(msg, field), false); break;
+		case FieldDescriptor::CPPTYPE_MESSAGE: PrintMessageDemson(r->GetMessage(msg, field), tick, false); break;
 		}
 	}
 }
@@ -169,11 +169,13 @@ void PrintPrimitiveDemson( const Msg& msg, const google::protobuf::FieldDescript
 // Prints out a whole protobuf message in demson format using reflection
 // to get all fields and their values.
 template<typename Msg>
-void PrintMessageDemson( const Msg& msg, bool endline )
+void PrintMessageDemson( const Msg& msg, int tick, bool endline )
 {
 	using namespace google::protobuf;
 	// TODO: get UnknownFieldSet!
 	printf("{\"demsontype\": \"%s\"", msg.GetTypeName().c_str());
+	printf(", \"tick\": %d", tick); //tick all the things
+
 	const Reflection *r = msg.GetReflection();
 	std::vector<const FieldDescriptor*> fields;
 	r->ListFields(msg, &fields);
@@ -183,13 +185,13 @@ void PrintMessageDemson( const Msg& msg, bool endline )
 		if(field->is_repeated()) {
 			printf("[");
 			for(int i = 0 ; i < r->FieldSize(msg, field) ; ++i) {
-				PrintPrimitiveDemson(msg, field, i);
+				PrintPrimitiveDemson(msg, field, tick, i);
 				if(i + 1 != r->FieldSize(msg, field))
 					printf(", ");
 			}
 			printf("]");
 		} else {
-			PrintPrimitiveDemson(msg, field);
+			PrintPrimitiveDemson(msg, field, tick);
 		}
 	}
 	printf("}");
@@ -206,7 +208,7 @@ void PrintUserMessage( CDemoFileDump& Demo, const void *parseBuffer, int BufferS
 	{
 		Demo.MsgPrintf( msg, BufferSize, "%s", msg.DebugString().c_str() );
 #ifdef OUTPUT_AUTODEMSON_USER
-		PrintMessageDemson( msg );
+		PrintMessageDemson( msg, tick );
 #endif
 	}
 }
@@ -251,7 +253,9 @@ void PrintUserMessage<CDOTAUserMsg_UnitEvent, DOTA_UM_UnitEvent>( CDemoFileDump&
 		return;
 
     //Demo.MsgPrintf( msg, BufferSize, "%s", msg.DebugString().c_str() );
-    PrintMessageDemson( msg );
+
+    //parsing this output in python is sadly faster for me than cpping it
+    PrintMessageDemson( msg, tick );
 }
 #endif
 
@@ -371,7 +375,7 @@ void PrintNetMessage( CDemoFileDump& Demo, const void *parseBuffer, int BufferSi
 
 		Demo.MsgPrintf( msg, BufferSize, "%s", msg.DebugString().c_str() );
 #ifdef OUTPUT_AUTODEMSON_NET
-		PrintMessageDemson( msg );
+		PrintMessageDemson( msg, tick );
 #endif
 	}
 }
@@ -467,7 +471,6 @@ static std::string GetNetMsgName( int Cmd )
 	return "NETMSG_???";
 }
 
-//TODO: HERE
 void CDemoFileDump::DumpDemoPacket( const std::string& buf, int tick )
 {
 	size_t index = 0;

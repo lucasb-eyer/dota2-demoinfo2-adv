@@ -50,6 +50,29 @@ for entry in replay:
         else:
             ignored_set.add(('gameevent', entry['evname']))
             pass
+    elif entry['demsontype'] == 'CDOTAUserMsg_UnitEvent':
+        if entry['msg_type'] == 'DOTA_UNIT_SPEECH_CLIENTSIDE_RULES':
+            new_entry = {}
+            new_entry['demsontype'] = 'matchtime' #TODO: this should be done in the cpp part?
+            new_entry['tick'] = entry['tick']
+            facts = entry['speech_match_on_client']['responsequery']['facts']
+            matches = filter(lambda x: x["key"] == 30, facts) #facts that match our obscure key
+
+            if len(matches) != 1: #not the droids we are looking for
+                continue
+            what = matches[0]["val_string"]
+
+            if what == "pre_game":
+                new_entry["match_time"] = -80
+            elif what == "game_start":
+                new_entry["match_time"] = -3
+            else:
+                ignored_set.add(('speech_clientside', what))
+                continue
+
+            print(json.dumps(new_entry))
+        else:
+            ignored_set.add((entry['demsontype'], entry['msg_type']))
     elif entry['demsontype'] == 'chatevent':
         #TODO: translate
         print(json.dumps(entry))
@@ -64,4 +87,4 @@ for entry in replay:
         pass #ignore any other entry
 
 #show what we have missed?
-#print(ignored_set)
+print(ignored_set)
